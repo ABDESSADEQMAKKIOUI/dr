@@ -12,6 +12,7 @@ use App\Models\Warehouse;
 use App\Models\ProductWarehouse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ProductController extends Controller
@@ -28,11 +29,15 @@ class ProductController extends Controller
                             ->whereColumn('stock_quantity', '<=', 'stock_alert')->count();
         $outOfStockCount = Product::where('stock_quantity', '<=', 0)->count();
 
+        $inventoryPurchaseValue = Product::select(DB::raw('SUM(COALESCE(cost_price, 0) * COALESCE(stock_quantity, 0)) as total'))->value('total') ?? 0;
+        $inventorySaleValue     = Product::select(DB::raw('SUM(COALESCE(sale_price, 0) * COALESCE(stock_quantity, 0)) as total'))->value('total') ?? 0;
+
         $categories = Category::orderBy('name')->get();
         $brands     = Brand::orderBy('name')->get();
 
         return view('products.index', compact(
             'products', 'inStockCount', 'lowStockCount', 'outOfStockCount',
+            'inventoryPurchaseValue', 'inventorySaleValue',
             'categories', 'brands'
         ));
     }
@@ -43,7 +48,9 @@ class ProductController extends Controller
         $brands = Brand::all();
         $units = Unit::all();
         $warehouses = Warehouse::where('is_active', true)->get();
-        return view('products.create', compact('categories', 'brands', 'units', 'warehouses'));
+        $productNames = Product::groupBy('name')->orderBy('name')->pluck('name');
+
+        return view('products.create', compact('categories', 'brands', 'units', 'warehouses', 'productNames'));
     }
 
     public function store(Request $request)

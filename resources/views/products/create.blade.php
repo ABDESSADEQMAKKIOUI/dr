@@ -41,9 +41,15 @@ $breadcrumbs = [
                     {{-- Product Name --}}
                     <div class="form-group md:col-span-2">
                         <label class="form-label">{{ __('app.name') }} <span class="text-rose-500">*</span></label>
-                        <input type="text" name="name" value="{{ old('name') }}" required
+                        <input type="text" name="name" list="product-name-suggestions" value="{{ old('name') }}" required
                                class="form-control @error('name') is-invalid @enderror"
+                               autocomplete="off"
                                placeholder="{{ __('app.enter_product_name') ?? 'e.g. iPhone 15 Pro 256GB' }}">
+                        <datalist id="product-name-suggestions">
+                            @foreach($productNames ?? [] as $productName)
+                                <option value="{{ $productName }}"></option>
+                            @endforeach
+                        </datalist>
                         @error('name')<p class="form-error">{{ $message }}</p>@enderror
                     </div>
 
@@ -397,7 +403,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const barInput = document.getElementById('barcode-field');
     if (skuInput) skuInput.addEventListener('input', () => checkDuplicate(skuInput, 'sku', document.getElementById('sku-hint')));
     if (barInput) barInput.addEventListener('input', () => checkDuplicate(barInput, 'barcode', document.getElementById('barcode-hint')));
+
+    const nameInput = document.querySelector('input[name="name"]');
+    const nameHistoryKey = 'productNameSuggestions';
+    let nameHistory = JSON.parse(localStorage.getItem(nameHistoryKey) || '[]');
+
+    if (nameInput) {
+        nameInput.addEventListener('blur', () => {
+            const value = nameInput.value.trim();
+            if (!value) return;
+            nameHistory = [value, ...nameHistory.filter(item => item !== value)].slice(0, 20);
+            localStorage.setItem(nameHistoryKey, JSON.stringify(nameHistory));
+            refreshProductNameSuggestions(nameHistory);
+        });
+
+        refreshProductNameSuggestions(nameHistory);
+    }
 });
+
+function refreshProductNameSuggestions(names) {
+    const datalist = document.getElementById('product-name-suggestions');
+    if (!datalist) return;
+    const existing = new Set(Array.from(datalist.options).map(option => option.value));
+    names.forEach(name => {
+        if (!existing.has(name)) {
+            const option = document.createElement('option');
+            option.value = name;
+            datalist.appendChild(option);
+            existing.add(name);
+        }
+    });
+}
 
 /* ── Submit loading state ───────────────────────────────────────── */
 document.getElementById('product-form').addEventListener('submit', function () {

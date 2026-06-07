@@ -8,6 +8,7 @@ function sideLink(string $route, bool $active): string {
     <nav class="p-4 space-y-1">
 
         {{-- Dashboard --}}
+        @can('dashboard.view')
         <a href="{{ route('dashboard') }}"
            class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,6 +16,7 @@ function sideLink(string $route, bool $active): string {
             </svg>
             {{ __('app.dashboard') }}
         </a>
+        @endcan
 
         {{-- Products --}}
         @can('products.view')

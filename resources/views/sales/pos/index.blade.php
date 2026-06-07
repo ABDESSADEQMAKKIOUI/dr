@@ -17,6 +17,7 @@
     /* Product card hover */
     .prod-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,70,229,.15); }
     .prod-card { transition: transform .15s, box-shadow .15s; }
+    .product-title { white-space: normal; word-break: break-word; }
     /* Out-of-stock overlay */
     .out-of-stock { opacity: .55; }
 </style>
@@ -121,7 +122,7 @@
                 @endif
 
                 <div class="p-3">
-                    <p class="text-sm font-semibold text-slate-800 truncate leading-tight mb-0.5">{{ $product->name }}</p>
+                    <p class="text-sm font-semibold text-slate-800 product-title leading-tight mb-0.5">{{ $product->name }}</p>
                     <p class="text-[11px] text-slate-400 mb-2">{{ $product->sku }}</p>
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-bold text-indigo-600">{{ number_format($product->sale_price, 2) }} DH</span>

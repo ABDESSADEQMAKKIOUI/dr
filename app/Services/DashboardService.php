@@ -25,6 +25,7 @@ class DashboardService
             'revenue' => $this->getRevenueStats($dates),
             'expenses' => $this->getExpensesStats($dates),
             'profit' => $this->calculateProfit($dates),
+            'inventory' => $this->getInventoryStats(),
             'invoices_unpaid' => $this->getUnpaidInvoices(),
             'low_stock_products' => $this->getLowStockProducts(),
             'top_products' => $this->getTopProducts($period),
@@ -113,6 +114,20 @@ class DashboardService
         return [
             'total' => $profit,
             'margin_percentage' => $revenue > 0 ? ($profit / $revenue) * 100 : 0,
+        ];
+    }
+
+    /**
+     * Valeur de l'inventaire des produits
+     */
+    protected function getInventoryStats(): array
+    {
+        $purchaseTotal = Product::select(DB::raw('SUM(COALESCE(cost_price, 0) * COALESCE(stock_quantity, 0)) as total'))->value('total') ?? 0;
+        $saleTotal = Product::select(DB::raw('SUM(COALESCE(sale_price, 0) * COALESCE(stock_quantity, 0)) as total'))->value('total') ?? 0;
+
+        return [
+            'purchase_total' => $purchaseTotal,
+            'sale_total' => $saleTotal,
         ];
     }
 

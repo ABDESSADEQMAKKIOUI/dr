@@ -9,7 +9,7 @@ use App\Http\Controllers\DashboardController;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth:sanctum'])->prefix('dashboard')->group(function () {
+Route::middleware(['auth:sanctum', 'can:dashboard.view'])->prefix('dashboard')->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
     Route::get('/sales-chart', [DashboardController::class, 'salesChart']);
     Route::get('/revenue-vs-expenses', [DashboardController::class, 'revenueVsExpenses']);

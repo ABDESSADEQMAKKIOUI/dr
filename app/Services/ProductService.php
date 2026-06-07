@@ -16,20 +16,36 @@ class ProductService
     {
         $query = Product::with('category', 'brand', 'unit', 'variants', 'images');
 
-        if (isset($filters['search'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('name', 'like', "%{$filters['search']}%")
-                  ->orWhere('sku', 'like', "%{$filters['search']}%")
-                  ->orWhere('barcode', 'like', "%{$filters['search']}%");
+        if (!empty(trim($filters['search'] ?? ''))) {
+            $search = trim($filters['search']);
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%");
             });
         }
 
-        if (isset($filters['category_id'])) {
+        if (!empty($filters['category_id'])) {
             $query->where('category_id', $filters['category_id']);
         }
 
-        if (isset($filters['brand_id'])) {
+        if (!empty($filters['brand_id'])) {
             $query->where('brand_id', $filters['brand_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            switch ($filters['status']) {
+                case 'in_stock':
+                    $query->whereColumn('stock_quantity', '>', 'stock_alert');
+                    break;
+                case 'low_stock':
+                    $query->where('stock_quantity', '>', 0)
+                          ->whereColumn('stock_quantity', '<=', 'stock_alert');
+                    break;
+                case 'out_of_stock':
+                    $query->where('stock_quantity', '<=', 0);
+                    break;
+            }
         }
 
         if (isset($filters['is_active'])) {
@@ -40,11 +56,7 @@ class ProductService
             $query->where('is_featured', $filters['is_featured']);
         }
 
-        if (isset($filters['low_stock'])) {
-            $query->whereColumn('stock_quantity', '<=', 'stock_alert');
-        }
-
-        return $query->latest()->paginate($filters['per_page'] ?? 15);
+        return $query->latest()->paginate($filters['per_page'] ?? 15)->withQueryString();
     }
 
     /**

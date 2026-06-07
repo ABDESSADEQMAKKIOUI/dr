@@ -12,6 +12,14 @@ $breadcrumbs = [
 
 @section('content')
 
+@push('styles')
+<style>
+@media print {
+    .no-print { display: none !important; }
+}
+</style>
+@endpush
+
 {{-- ── Stats row ─────────────────────────────────────────────────── --}}
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     {{-- Total --}}
@@ -64,6 +72,31 @@ $breadcrumbs = [
     </div>
 </div>
 
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 no-print">
+    <div class="stat-mini">
+        <div class="stat-mini-icon bg-slate-100">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+            </svg>
+        </div>
+        <div>
+            <div class="stat-mini-value">{{ number_format($inventoryPurchaseValue ?? 0, 2) }} DH</div>
+            <div class="stat-mini-label">{{ __('app.total_purchase_value') ?? 'Total Purchase Value' }}</div>
+        </div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-mini-icon bg-slate-100">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+            </svg>
+        </div>
+        <div>
+            <div class="stat-mini-value">{{ number_format($inventorySaleValue ?? 0, 2) }} DH</div>
+            <div class="stat-mini-label">{{ __('app.total_sale_value') ?? 'Total Sale Value' }}</div>
+        </div>
+    </div>
+</div>
+
 {{-- ── Main card ─────────────────────────────────────────────────── --}}
 <div class="card">
 
@@ -73,7 +106,15 @@ $breadcrumbs = [
             <h3 class="card-title">{{ __('app.products') }}</h3>
             <p class="text-xs text-slate-500 mt-0.5">{{ __('app.manage_your_products') ?? 'Manage your product catalogue' }}</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 no-print">
+            {{-- Print list --}}
+            <button type="button" onclick="window.print()"
+                    class="btn btn-outline btn-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2zM5 7V5a2 2 0 012-2h10a2 2 0 012 2v2"/>
+                </svg>
+                {{ __('app.print_list') ?? 'Print List' }}
+            </button>
             {{-- Print barcodes (hidden until selection) --}}
             <button id="print-barcodes-btn"
                     onclick="printSelectedBarcodes()"
@@ -93,7 +134,7 @@ $breadcrumbs = [
     </div>
 
     {{-- ── Filter bar ──────────────────────────────────────────────── --}}
-    <div class="filter-bar">
+    <form id="product-filter-form" method="GET" action="{{ route('products.index') }}" class="filter-bar">
         {{-- Search --}}
         <div class="filter-group flex-1 min-w-48">
             <label class="filter-label">{{ __('app.search') }}</label>
@@ -102,7 +143,8 @@ $breadcrumbs = [
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
                 </svg>
-                <input type="text" id="search"
+                <input type="text" id="search" name="search"
+                       value="{{ request('search') }}"
                        placeholder="{{ __('app.search_products') ?? 'Name, SKU, barcode…' }}"
                        class="form-control pl-9 py-2">
             </div>
@@ -110,44 +152,52 @@ $breadcrumbs = [
         {{-- Category --}}
         <div class="filter-group w-44">
             <label class="filter-label">{{ __('app.category') }}</label>
-            <select id="filter-category" class="form-control py-2">
+            <select id="filter-category" name="category_id" class="form-control py-2" onchange="this.form.submit()">
                 <option value="">{{ __('app.all_categories') }}</option>
                 @foreach($categories ?? [] as $cat)
-                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                 @endforeach
             </select>
         </div>
         {{-- Brand --}}
         <div class="filter-group w-36">
             <label class="filter-label">{{ __('app.brand') }}</label>
-            <select id="filter-brand" class="form-control py-2">
+            <select id="filter-brand" name="brand_id" class="form-control py-2" onchange="this.form.submit()">
                 <option value="">{{ __('app.all_brands') }}</option>
                 @foreach($brands ?? [] as $brand)
-                <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                <option value="{{ $brand->id }}" {{ request('brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
                 @endforeach
             </select>
         </div>
         {{-- Status --}}
         <div class="filter-group w-36">
             <label class="filter-label">{{ __('app.status') }}</label>
-            <select id="filter-status" class="form-control py-2">
-                <option value="">{{ __('app.all') }}</option>
-                <option value="in_stock">{{ __('app.in_stock') }}</option>
-                <option value="low_stock">{{ __('app.low_stock') }}</option>
-                <option value="out_of_stock">{{ __('app.out_of_stock') }}</option>
+            <select id="filter-status" name="status" class="form-control py-2" onchange="this.form.submit()">
+                <option value="" {{ request('status') === null || request('status') === '' ? 'selected' : '' }}>{{ __('app.all') }}</option>
+                <option value="in_stock" {{ request('status') === 'in_stock' ? 'selected' : '' }}>{{ __('app.in_stock') }}</option>
+                <option value="low_stock" {{ request('status') === 'low_stock' ? 'selected' : '' }}>{{ __('app.low_stock') }}</option>
+                <option value="out_of_stock" {{ request('status') === 'out_of_stock' ? 'selected' : '' }}>{{ __('app.out_of_stock') }}</option>
             </select>
         </div>
         {{-- Reset --}}
         <div class="filter-group">
             <label class="filter-label opacity-0">.</label>
-            <button onclick="resetFilters()" class="btn btn-ghost btn-sm text-slate-500">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                {{ __('app.reset') ?? 'Reset' }}
-            </button>
+            <div class="flex items-center gap-2">
+                <button type="submit" class="btn btn-ghost btn-sm text-slate-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    {{ __('app.filter') ?? 'Filter' }}
+                </button>
+                <a href="{{ route('products.index') }}" class="btn btn-ghost btn-sm text-slate-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    {{ __('app.reset') ?? 'Reset' }}
+                </a>
+            </div>
         </div>
-    </div>
+    </form>
 
     {{-- ── Table ────────────────────────────────────────────────────── --}}
     <div class="table-wrapper">
@@ -321,38 +371,6 @@ function printSelectedBarcodes() {
     if (!ids.length) return;
     window.open(`{{ route('barcodes.print') }}?${ids.map(id => `ids[]=${id}`).join('&')}&size=a4`, '_blank');
 }
-
-/* ── Client-side filtering ─────────────────────────────────────── */
-function applyFilters() {
-    const search   = document.getElementById('search').value.toLowerCase();
-    const category = document.getElementById('filter-category').value;
-    const brand    = document.getElementById('filter-brand').value;
-    const status   = document.getElementById('filter-status').value;
-
-    let visible = 0;
-    document.querySelectorAll('#products-tbody tr[data-name]').forEach(row => {
-        const matchSearch   = !search   || row.dataset.name.includes(search);
-        const matchCategory = !category || row.dataset.category === category;
-        const matchBrand    = !brand    || row.dataset.brand === brand;
-        const matchStatus   = !status   || row.dataset.status === status;
-        const show = matchSearch && matchCategory && matchBrand && matchStatus;
-        row.style.display = show ? '' : 'none';
-        if (show) visible++;
-    });
-}
-
-function resetFilters() {
-    ['search','filter-category','filter-brand','filter-status'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    applyFilters();
-}
-
-document.getElementById('search').addEventListener('input', applyFilters);
-document.getElementById('filter-category').addEventListener('change', applyFilters);
-document.getElementById('filter-brand').addEventListener('change', applyFilters);
-document.getElementById('filter-status').addEventListener('change', applyFilters);
 
 /* ── Delete confirm ────────────────────────────────────────────── */
 function confirmDelete(form) {

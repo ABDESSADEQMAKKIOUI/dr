@@ -9,6 +9,7 @@ $purchases = $stats['purchases'] ?? [];
 $revenue   = $stats['revenue']   ?? [];
 $expenses  = $stats['expenses']  ?? [];
 $profit    = $stats['profit']    ?? [];
+$inventory = $stats['inventory'] ?? [];
 $unpaid    = $stats['invoices_unpaid']    ?? [];
 $lowStock  = $stats['low_stock_products'] ?? [];
 $topProds  = $stats['top_products']       ?? [];
@@ -139,6 +140,29 @@ $periods = ['today' => __('app.today'), 'week' => __('app.this_week'), 'month' =
     </div>
     <div class="kpi-icon" style="background:{{ $profitPos ? '#d1fae5' : '#fee2e2' }}">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="{{ $profitPos ? '#059669' : '#dc2626' }}"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"/></svg>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+  <div class="kpi">
+    <div>
+      <p class="kpi-label">{{ __('app.inventory_purchase_value') ?? 'Inventory Purchase Value' }}</p>
+      <p class="kpi-value">{{ number_format($inventory['purchase_total'] ?? 0, 0) }}</p>
+      <p style="font-size:.7rem;color:#94a3b8;margin-top:.1rem">{{ $currency }}</p>
+    </div>
+    <div class="kpi-icon" style="background:#d1fae5">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#10b981"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5a6 6 0 0 1 12 0 6 6 0 1 1-12 0Zm0 0a3 3 0 0 0 6 0 3 3 0 0 0-6 0Z"/></svg>
+    </div>
+  </div>
+  <div class="kpi">
+    <div>
+      <p class="kpi-label">{{ __('app.inventory_sale_value') ?? 'Inventory Sale Value' }}</p>
+      <p class="kpi-value">{{ number_format($inventory['sale_total'] ?? 0, 0) }}</p>
+      <p style="font-size:.7rem;color:#94a3b8;margin-top:.1rem">{{ $currency }}</p>
+    </div>
+    <div class="kpi-icon" style="background:#ede9fe">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#7c3aed"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
     </div>
   </div>
 </div>

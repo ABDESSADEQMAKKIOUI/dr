@@ -85,11 +85,13 @@ Route::middleware('auth')->group(function () {
     ]))->name('docs');
 
     // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('dashboard', [DashboardController::class, 'index']);
-    Route::get('dashboard/sales-chart', [DashboardController::class, 'salesChart'])->name('dashboard.sales-chart');
-    Route::get('dashboard/revenue-vs-expenses', [DashboardController::class, 'revenueVsExpenses'])->name('dashboard.revenue-vs-expenses');
-    Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
+    Route::middleware('can:dashboard.view')->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('dashboard', [DashboardController::class, 'index']);
+        Route::get('dashboard/sales-chart', [DashboardController::class, 'salesChart'])->name('dashboard.sales-chart');
+        Route::get('dashboard/revenue-vs-expenses', [DashboardController::class, 'revenueVsExpenses'])->name('dashboard.revenue-vs-expenses');
+        Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
+    });
     
     // Users Management
     Route::resource('users', UserController::class);
