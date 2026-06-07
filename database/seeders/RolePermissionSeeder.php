@@ -12,6 +12,9 @@ class RolePermissionSeeder extends Seeder
     {
         // Créer les permissions par modules
         $permissions = [
+            // Dashboard
+            'dashboard.view',
+
             // Products
             'products.view', 'products.create', 'products.edit', 'products.delete',
             'categories.view', 'categories.create', 'categories.edit', 'categories.delete',
@@ -62,78 +65,92 @@ class RolePermissionSeeder extends Seeder
 
         foreach ($permissions as $permission) {
             $group = explode('.', $permission)[0];
-            Permission::create([
-                'name' => $permission,
-                'group' => $group,
-                'guard_name' => 'web',
-            ]);
+            Permission::firstOrCreate(
+                ['name' => $permission],
+                [
+                    'group' => $group,
+                    'guard_name' => 'web',
+                ]
+            );
         }
 
         // Créer les rôles
-        $superAdminRole = Role::create([
-            'name' => 'Super Admin',
-            'guard_name' => 'web',
-            'description' => 'Super administrateur avec tous les accès',
-            'is_default' => false,
-        ]);
+        $superAdminRole = Role::firstOrCreate(
+            ['name' => 'Super Admin'],
+            [
+                'guard_name' => 'web',
+                'description' => 'Super administrateur avec tous les accès',
+                'is_default' => false,
+            ]
+        );
 
-        $adminRole = Role::create([
-            'name' => 'Admin',
-            'guard_name' => 'web',
-            'description' => 'Administrateur avec la plupart des accès',
-            'is_default' => false,
-        ]);
+        $adminRole = Role::firstOrCreate(
+            ['name' => 'Admin'],
+            [
+                'guard_name' => 'web',
+                'description' => 'Administrateur avec la plupart des accès',
+                'is_default' => false,
+            ]
+        );
 
-        $managerRole = Role::create([
-            'name' => 'Manager',
-            'guard_name' => 'web',
-            'description' => 'Manager avec accès limité',
-            'is_default' => false,
-        ]);
+        $managerRole = Role::firstOrCreate(
+            ['name' => 'Manager'],
+            [
+                'guard_name' => 'web',
+                'description' => 'Manager avec accès limité',
+                'is_default' => false,
+            ]
+        );
 
-        $sellerRole = Role::create([
-            'name' => 'Vendeur',
-            'guard_name' => 'web',
-            'description' => 'Vendeur avec accès ventes uniquement',
-            'is_default' => false,
-        ]);
+        $sellerRole = Role::firstOrCreate(
+            ['name' => 'Vendeur'],
+            [
+                'guard_name' => 'web',
+                'description' => 'Vendeur avec accès ventes uniquement',
+                'is_default' => false,
+            ]
+        );
 
-        $cashierRole = Role::create([
-            'name' => 'Caissier',
-            'guard_name' => 'web',
-            'description' => 'Caissier POS',
-            'is_default' => true,
-        ]);
+        $cashierRole = Role::firstOrCreate(
+            ['name' => 'Caissier'],
+            [
+                'guard_name' => 'web',
+                'description' => 'Caissier POS',
+                'is_default' => true,
+            ]
+        );
 
         // Assigner toutes les permissions au Super Admin
-        $superAdminRole->permissions()->attach(Permission::all());
+        $superAdminRole->permissions()->syncWithoutDetaching(Permission::all());
 
         // Permissions Admin (tout sauf users et settings critiques)
         $adminPermissions = Permission::whereNotIn('name', [
             'users.delete', 'roles.delete', 'settings.manage'
         ])->get();
-        $adminRole->permissions()->attach($adminPermissions);
+        $adminRole->permissions()->syncWithoutDetaching($adminPermissions);
 
         // Permissions Manager
         $managerPermissions = Permission::whereIn('group', [
-            'products', 'categories', 'brands', 'stock', 'sales', 'purchases',
+            'dashboard', 'products', 'categories', 'brands', 'stock', 'sales', 'purchases',
             'customers', 'suppliers', 'reports', 'expenses'
         ])->get();
-        $managerRole->permissions()->attach($managerPermissions);
+        $managerRole->permissions()->syncWithoutDetaching($managerPermissions);
 
         // Permissions Vendeur
         $sellerPermissions = Permission::whereIn('name', [
+            'dashboard.view',
             'products.view', 'sales.view', 'sales.create', 'sales.edit',
             'quotations.view', 'quotations.create', 'quotations.edit',
             'customers.view', 'customers.create', 'customers.edit',
             'invoices.view', 'invoices.create', 'invoices.send',
         ])->get();
-        $sellerRole->permissions()->attach($sellerPermissions);
+        $sellerRole->permissions()->syncWithoutDetaching($sellerPermissions);
 
         // Permissions Caissier
         $cashierPermissions = Permission::whereIn('name', [
+            'dashboard.view',
             'products.view', 'sales.view', 'sales.create', 'customers.view'
         ])->get();
-        $cashierRole->permissions()->attach($cashierPermissions);
+        $cashierRole->permissions()->syncWithoutDetaching($cashierPermissions);
     }
 }
