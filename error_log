@@ -1,0 +1,128 @@
+[25-Apr-2026 11:54:28 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/public/run_setup.php:22
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/run_setup.php on line 22
+[25-Apr-2026 11:54:43 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/public/run_setup.php:22
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/run_setup.php on line 22
+[25-Apr-2026 11:57:11 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/public/run_setup.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/run_setup.php on line 16
+[25-Apr-2026 12:03:42 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php:17
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php on line 17
+[25-Apr-2026 12:13:09 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php on line 10
+[25-Apr-2026 12:13:40 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php on line 10
+[25-Apr-2026 12:21:44 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php on line 10
+[25-Apr-2026 12:22:22 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php:21
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php on line 21
+[25-Apr-2026 12:24:07 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php:21
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php on line 21
+[25-Apr-2026 12:25:31 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php:28
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php on line 28
+[25-Apr-2026 12:31:51 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Call to undefined function shell_exec() in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php:35
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/run_setup.php on line 35
+[25-Apr-2026 16:22:09 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:22:10 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:22:10 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:22:10 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:22:10 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:22:10 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:30:17 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:30:17 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:30:17 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:30:17 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:30:18 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 16:30:18 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/artisan(9): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22

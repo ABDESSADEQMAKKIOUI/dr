@@ -1,0 +1,822 @@
+# Structure Complète - Application Gestion Stock & Facturation
+
+## 1. ARCHITECTURE DU PROJET
+
+```
+inventory-management-system/
+│
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Auth/
+│   │   │   ├── Admin/
+│   │   │   ├── Dashboard/
+│   │   │   ├── Product/
+│   │   │   ├── Purchase/
+│   │   │   ├── Sale/
+│   │   │   ├── Invoice/
+│   │   │   ├── Customer/
+│   │   │   ├── Supplier/
+│   │   │   ├── Stock/
+│   │   │   ├── Report/
+│   │   │   ├── Expense/
+│   │   │   ├── Payment/
+│   │   │   └── Setting/
+│   │   │
+│   │   ├── Middleware/
+│   │   └── Requests/
+│   │
+│   ├── Models/
+│   │   ├── User.php
+│   │   ├── Role.php
+│   │   ├── Permission.php
+│   │   ├── Product.php
+│   │   ├── Category.php
+│   │   ├── Brand.php
+│   │   ├── Unit.php
+│   │   ├── Warehouse.php
+│   │   ├── Customer.php
+│   │   ├── Supplier.php
+│   │   ├── Purchase.php
+│   │   ├── PurchaseItem.php
+│   │   ├── Sale.php
+│   │   ├── SaleItem.php
+│   │   ├── Invoice.php
+│   │   ├── Quote.php
+│   │   ├── Payment.php
+│   │   ├── Expense.php
+│   │   ├── ExpenseCategory.php
+│   │   ├── StockAdjustment.php
+│   │   ├── StockTransfer.php
+│   │   ├── Return.php
+│   │   ├── Tax.php
+│   │   └── Setting.php
+│   │
+│   ├── Services/
+│   │   ├── InvoiceService.php
+│   │   ├── StockService.php
+│   │   ├── ReportService.php
+│   │   ├── PaymentService.php
+│   │   └── NotificationService.php
+│   │
+│   └── Repositories/
+│
+├── database/
+│   ├── migrations/
+│   ├── seeders/
+│   └── factories/
+│
+├── resources/
+│   ├── views/
+│   │   ├── auth/
+│   │   ├── dashboard/
+│   │   ├── products/
+│   │   ├── sales/
+│   │   ├── purchases/
+│   │   ├── invoices/
+│   │   ├── customers/
+│   │   ├── suppliers/
+│   │   ├── reports/
+│   │   ├── settings/
+│   │   └── layouts/
+│   │
+│   └── js/
+│       ├── components/
+│       └── pages/
+│
+├── public/
+│   ├── uploads/
+│   │   ├── products/
+│   │   ├── invoices/
+│   │   └── documents/
+│   └── assets/
+│
+└── storage/
+    └── app/
+        ├── invoices/
+        ├── reports/
+        └── backups/
+```
+
+## 2. MODULES PRINCIPAUX
+
+### MODULE 1: AUTHENTIFICATION & UTILISATEURS
+- **Inscription/Connexion**
+  - Multi-auth (Admin, Manager, Staff)
+  - Connexion avec email/username
+  - Remember me
+  - Mot de passe oublié
+  - Vérification email
+  - Two-Factor Authentication (2FA)
+
+- **Gestion des utilisateurs**
+  - CRUD utilisateurs
+  - Profils utilisateurs
+  - Changement de mot de passe
+  - Historique des connexions
+  - Gestion des sessions actives
+
+- **Rôles & Permissions**
+  - Rôles prédéfinis (Admin, Manager, Vendeur, Caissier, Magasinier)
+  - Permissions granulaires
+  - Attribution dynamique
+  - Permissions par module
+
+### MODULE 2: TABLEAU DE BORD
+- **Dashboard Principal**
+  - Statistiques en temps réel
+  - Ventes du jour/mois/année
+  - Stock critique
+  - Produits les plus vendus
+  - Graphiques des ventes
+  - Revenus vs Dépenses
+  - Notifications & Alertes
+  - Tâches à faire
+  - Factures impayées
+  - Commandes en attente
+
+- **Widgets personnalisables**
+  - Drag & drop
+  - Afficher/Masquer widgets
+  - Période personnalisable
+
+### MODULE 3: GESTION DES PRODUITS
+- **Produits**
+  - Nom, description, code SKU
+  - Code-barres (génération automatique)
+  - Images multiples
+  - Catégories & sous-catégories illimitées
+  - Marques
+  - Unités de mesure
+  - Prix d'achat/vente
+  - Remises
+  - Taxes applicables
+  - Stock minimum/maximum
+  - Produits variables (taille, couleur)
+  - Produits composés (kits)
+  - Produits périssables (date expiration)
+  - Statut (actif/inactif)
+  - Featured products
+  - Import/Export CSV/Excel
+
+- **Catégories**
+  - Hiérarchie multi-niveaux
+  - Images de catégorie
+  - Description SEO
+
+- **Marques**
+  - Logo
+  - Description
+  - Produits associés
+
+- **Unités**
+  - Unités de base (pièce, kg, litre, etc.)
+  - Unités composées
+  - Conversion automatique
+
+### MODULE 4: GESTION DES STOCKS
+- **Entrepôts/Magasins**
+  - Multi-entrepôts
+  - Stock par entrepôt
+  - Localisation
+  - Responsable
+
+- **Mouvements de stock**
+  - Historique complet
+  - Entrées/Sorties
+  - Transferts inter-entrepôts
+  - Ajustements manuels
+  - Raisons d'ajustement
+  - Validation à plusieurs niveaux
+
+- **Inventaire**
+  - Inventaire physique
+  - Comparaison théorique/réel
+  - Génération de rapports d'écart
+  - Impression de feuilles d'inventaire
+  - Scan code-barres
+
+- **Alertes Stock**
+  - Stock minimum atteint
+  - Stock rupture
+  - Produits expirant bientôt
+  - Notification email/SMS
+  - Dashboard des alertes
+
+- **Transferts**
+  - Transferts inter-entrepôts
+  - Demandes de transfert
+  - Validation
+  - Bon de transfert PDF
+  - Suivi des transferts
+
+### MODULE 5: ACHATS & FOURNISSEURS
+- **Fournisseurs**
+  - Informations complètes
+  - Contacts multiples
+  - Documents (RIB, RC, etc.)
+  - Historique des achats
+  - Balance fournisseur
+  - Notes & commentaires
+  - Import/Export
+
+- **Commandes Fournisseurs**
+  - Création de commandes
+  - Multi-produits
+  - Statuts (Brouillon, Envoyé, Confirmé, Reçu, Annulé)
+  - Bon de commande PDF
+  - Email automatique
+  - Suivi de livraison
+  - Réception partielle/complète
+
+- **Bons de Réception**
+  - Réception de marchandises
+  - Vérification quantités
+  - Contrôle qualité
+  - Mise à jour automatique du stock
+  - Différences de réception
+
+- **Factures Fournisseurs**
+  - Enregistrement factures
+  - Échéanciers de paiement
+  - Paiements partiels
+  - Historique des paiements
+  - Statut (Payée, Impayée, Partiel)
+
+- **Retours Fournisseurs**
+  - Avoirs
+  - Raisons de retour
+  - Mise à jour stock
+  - Remboursements
+
+### MODULE 6: VENTES & CLIENTS
+- **Clients**
+  - Particuliers/Entreprises
+  - Groupes de clients
+  - Tarifs personnalisés
+  - Limites de crédit
+  - Historique des achats
+  - Programme de fidélité
+  - Points de fidélité
+  - Adresses multiples (facturation/livraison)
+  - Import/Export
+
+- **Point de Vente (POS)**
+  - Interface caisse rapide
+  - Scan code-barres
+  - Calculatrice intégrée
+  - Remises rapides
+  - Recherche produits
+  - Favoris/Raccourcis
+  - Paiements multiples
+  - Impression ticket
+  - Ouverture/Fermeture de caisse
+  - Mode hors ligne
+
+- **Devis**
+  - Création de devis
+  - Conversion en vente
+  - Validité
+  - Templates personnalisables
+  - Envoi par email
+  - Signature électronique
+  - Suivi (Vu, Non vu)
+
+- **Ventes**
+  - Ventes directes
+  - Ventes à crédit
+  - Ventes en gros/détail
+  - Remises (%, montant fixe)
+  - Multi-devises
+  - Notes de vente
+  - Statuts (Brouillon, Confirmée, Livrée, Annulée)
+
+- **Factures**
+  - Génération automatique
+  - Numérotation personnalisable
+  - Templates multiples
+  - Multi-langues
+  - Logo & en-tête
+  - Conditions de paiement
+  - Notes & mentions légales
+  - Pièces jointes
+  - QR Code pour paiement
+  - Signature numérique
+  - Envoi automatique par email
+  - Rappels automatiques
+
+- **Retours & Avoirs**
+  - Retours clients
+  - Raisons de retour
+  - Avoirs automatiques
+  - Remboursements
+  - Échanges
+
+- **Livraisons**
+  - Bons de livraison
+  - Suivi de livraison
+  - Statuts (En préparation, Expédiée, Livrée)
+  - Transporteurs
+  - Numéros de suivi
+
+### MODULE 7: PAIEMENTS
+- **Méthodes de paiement**
+  - Espèces
+  - Carte bancaire
+  - Chèque
+  - Virement
+  - Mobile Money
+  - PayPal, Stripe (intégration)
+  - Crédit client
+
+- **Gestion des paiements**
+  - Paiements partiels
+  - Échéanciers
+  - Historique complet
+  - Reçus de paiement PDF
+  - Rapprochements bancaires
+  - Paiements en attente
+  - Paiements récurrents
+
+- **Comptes Clients**
+  - Solde client
+  - Crédit disponible
+  - Historique des transactions
+  - Relevés de compte
+  - Relances automatiques
+
+### MODULE 8: DÉPENSES
+- **Catégories de dépenses**
+  - Hiérarchie
+  - Budget par catégorie
+
+- **Enregistrement des dépenses**
+  - Description
+  - Montant
+  - Date
+  - Catégorie
+  - Méthode de paiement
+  - Pièces jointes
+  - Fournisseur (si applicable)
+  - Récurrentes/Ponctuelles
+
+- **Suivi budgétaire**
+  - Budget vs Réel
+  - Alertes dépassement
+
+### MODULE 9: RAPPORTS & ANALYSES
+- **Rapports de Ventes**
+  - Ventes par période
+  - Ventes par produit
+  - Ventes par catégorie
+  - Ventes par client
+  - Ventes par vendeur
+  - Ventes par entrepôt
+  - Analyse des tendances
+  - Comparaisons périodes
+
+- **Rapports d'Achats**
+  - Achats par période
+  - Achats par fournisseur
+  - Achats par produit
+  - Analyse des coûts
+
+- **Rapports de Stock**
+  - Valeur du stock
+  - Stock par entrepôt
+  - Produits en rupture
+  - Produits à faible stock
+  - Mouvements de stock
+  - Stock expirant
+  - Rotation de stock
+  - Stock mort (non vendu)
+
+- **Rapports Financiers**
+  - Revenus vs Dépenses
+  - Profits & Pertes
+  - Flux de trésorerie
+  - Balance clients/fournisseurs
+  - Taxes collectées/payées
+  - Commissions vendeurs
+
+- **Rapports Clients**
+  - Top clients
+  - Clients inactifs
+  - Historique client
+  - Soldes clients
+
+- **Export & Impression**
+  - PDF
+  - Excel
+  - CSV
+  - Graphiques interactifs
+  - Filtres avancés
+  - Envoi par email programmé
+
+### MODULE 10: COMPTABILITÉ
+- **Plan comptable**
+  - Comptes configurables
+  - Hiérarchie de comptes
+
+- **Écritures comptables**
+  - Génération automatique depuis ventes/achats
+  - Écritures manuelles
+  - Journaux (Ventes, Achats, Banque, Caisse)
+
+- **Grand livre**
+  - Balance générale
+  - Balance auxiliaire
+
+- **TVA**
+  - Calcul automatique
+  - Déclaration TVA
+  - Taux multiples
+
+### MODULE 11: HRM (Gestion des Employés)
+- **Employés**
+  - Profils complets
+  - Contrats
+  - Documents
+  - Départements
+  - Postes
+
+- **Présences**
+  - Pointage
+  - Congés
+  - Absences
+  - Heures supplémentaires
+
+- **Paies**
+  - Salaires
+  - Primes
+  - Déductions
+  - Bulletins de paie
+  - Historique
+
+- **Commissions**
+  - Calcul automatique
+  - Règles personnalisables
+  - Suivi
+
+### MODULE 12: CRM
+- **Leads**
+  - Prospection
+  - Suivi des leads
+  - Conversion en clients
+
+- **Opportunités**
+  - Pipeline de ventes
+  - Probabilité de clôture
+  - Valeur estimée
+
+- **Tâches & Rendez-vous**
+  - Calendrier
+  - Rappels
+  - Assignation
+
+- **Communications**
+  - Emails
+  - SMS
+  - Appels
+  - Historique complet
+
+### MODULE 13: PARAMÈTRES & CONFIGURATION
+- **Paramètres Généraux**
+  - Nom de l'entreprise
+  - Logo
+  - Coordonnées
+  - Informations légales
+  - Devises
+  - Format de date/heure
+  - Langue par défaut
+  - Fuseau horaire
+
+- **Paramètres de Facturation**
+  - Préfixes de numérotation
+  - Formats de numéros
+  - Templates de factures
+  - Termes et conditions
+  - Notes par défaut
+  - Email templates
+
+- **Taxes**
+  - Configuration des taxes
+  - Taux multiples
+  - Taxes composées
+  - Exemptions
+
+- **Notifications**
+  - Email
+  - SMS (Twilio, Nexmo)
+  - Notifications push
+  - Événements déclencheurs
+
+- **Intégrations**
+  - API REST
+  - Webhooks
+  - Passerelles de paiement
+  - Services d'expédition
+  - Comptabilité externe
+
+- **Sauvegarde & Restauration**
+  - Sauvegarde automatique
+  - Sauvegarde manuelle
+  - Restauration
+  - Sauvegarde sur cloud
+
+- **Maintenance**
+  - Mode maintenance
+  - Nettoyage de cache
+  - Optimisation DB
+  - Logs système
+
+### MODULE 14: MULTI-TENANCY (SAAS)
+- **Gestion des Tenants**
+  - Inscription automatique
+  - Domaines personnalisés
+  - Bases de données séparées
+  - Quotas & limitations
+
+- **Plans d'abonnement**
+  - Gratuit/Essai
+  - Basic, Pro, Enterprise
+  - Facturation récurrente
+  - Limitations par plan
+
+- **Facturation SaaS**
+  - Stripe/PayPal
+  - Factures d'abonnement
+  - Gestion des cartes
+
+### MODULE 15: FONCTIONNALITÉS AVANCÉES
+- **Multi-devises**
+  - Conversion automatique
+  - Taux de change mis à jour
+  - Rapports multi-devises
+
+- **Multi-langues**
+  - Interface traduite
+  - Documents multilingues
+  - Langues RTL (Arabe)
+
+- **Code-barres**
+  - Génération automatique
+  - Impression étiquettes
+  - Différents formats (EAN, Code128, QR)
+  - Scan via webcam
+
+- **Importations**
+  - Import CSV/Excel
+  - Mapping de colonnes
+  - Validation
+  - Aperçu avant import
+
+- **API REST**
+  - Documentation Swagger
+  - Authentification JWT
+  - Endpoints complets
+  - Webhooks
+
+- **Mobile App (optionnel)**
+  - React Native / Flutter
+  - Synchronisation
+  - POS mobile
+  - Gestion stock mobile
+
+## 3. SCHÉMA DE BASE DE DONNÉES
+
+### Tables Principales (50+ tables)
+
+```sql
+-- USERS & AUTH
+- users
+- roles
+- permissions
+- role_user
+- permission_role
+- user_warehouses
+
+-- PRODUCTS
+- products
+- categories
+- brands
+- units
+- product_variants
+- product_images
+- product_warehouses
+
+-- INVENTORY
+- warehouses
+- stock_adjustments
+- stock_adjustment_items
+- stock_transfers
+- stock_transfer_items
+- inventory_counts
+
+-- PURCHASES
+- suppliers
+- purchases
+- purchase_items
+- purchase_payments
+- purchase_returns
+- purchase_return_items
+
+-- SALES
+- customers
+- customer_groups
+- sales
+- sale_items
+- sale_payments
+- sale_returns
+- sale_return_items
+- quotations
+- quotation_items
+
+-- INVOICES
+- invoices
+- invoice_items
+- invoice_payments
+
+-- EXPENSES
+- expenses
+- expense_categories
+
+-- PAYMENTS
+- payments
+- payment_methods
+
+-- ACCOUNTING
+- accounts
+- account_types
+- transactions
+- journals
+
+-- HRM
+- employees
+- departments
+- designations
+- attendances
+- leaves
+- payrolls
+- payroll_items
+
+-- CRM
+- leads
+- opportunities
+- activities
+- contacts
+
+-- SYSTEM
+- settings
+- notifications
+- activity_logs
+- email_templates
+- taxes
+- currencies
+- languages
+```
+
+## 4. FONCTIONNALITÉS TECHNIQUES
+
+### Sécurité
+- Protection CSRF
+- XSS Prevention
+- SQL Injection Protection
+- Rate Limiting
+- IP Whitelist/Blacklist
+- SSL/HTTPS obligatoire
+- Authentification à deux facteurs
+- Audit trail complet
+- Chiffrement des données sensibles
+- Backup automatique chiffré
+
+### Performance
+- Cache (Redis/Memcached)
+- Queue Jobs (Laravel Queue)
+- Lazy Loading
+- Pagination
+- Database indexing
+- Asset optimization (Vite)
+- CDN support
+- Image optimization
+
+### UX/UI
+- Design responsive
+- Mobile-first
+- Mode sombre
+- Thèmes personnalisables
+- Drag & drop
+- Recherche avancée avec filtres
+- Recherche globale (Command palette)
+- Raccourcis clavier
+- Undo/Redo
+- Notifications toast
+- Loading states
+- Pagination infinie (scroll)
+
+## 5. INSTALLATION WIZARD
+
+### Étapes d'installation
+1. **Vérification des prérequis**
+   - PHP Version
+   - Extensions PHP
+   - Permissions dossiers
+   - Base de données
+
+2. **Configuration Base de Données**
+   - Host, port, nom DB
+   - Credentials
+   - Test de connexion
+
+3. **Configuration Application**
+   - Nom de l'entreprise
+   - Email admin
+   - Mot de passe
+   - Timezone
+   - Langue
+
+4. **Import de données de démo** (optionnel)
+   - Produits exemple
+   - Clients/Fournisseurs
+   - Transactions
+
+5. **Finalisation**
+   - Génération des clés
+   - Migrations
+   - Seeders
+   - Cache
+   - Connexion automatique
+
+## 6. DOCUMENTATION À FOURNIR
+
+### Documentation Utilisateur
+- Guide d'installation
+- Guide de démarrage rapide
+- Manuel utilisateur complet
+- FAQ
+- Tutoriels vidéo
+- Screenshots annotés
+
+### Documentation Technique
+- Architecture
+- API Documentation
+- Schéma de base de données
+- Guide de personnalisation
+- Guide de déploiement
+- Changelog
+
+## 7. LICENCES SUGGÉRÉES
+
+### Regular License ($49-$69)
+- Usage pour 1 projet
+- Support 6 mois
+- Mises à jour gratuites
+
+### Extended License ($299-$399)
+- Usage illimité
+- Support 12 mois
+- Code source complet
+- Personnalisation libre
+
+## 8. ROADMAP FUTURE
+
+### Version 2.0
+- Mobile App native
+- IA pour prévisions de stock
+- Reconnaissance d'image produits
+- Chatbot support client
+- Intégration e-commerce
+- Marketplace de plugins
+- Analyse prédictive
+- Recommandations produits
+
+Cette structure représente un système complet de gestion d'entreprise (ERP léger) qui sera très compétitif sur Envato Market.
+
+# 1. Aller dans le dossier backend
+cd c:\Users\Asus\Desktop\call\facturation
+
+# 2. Installer les dépendances
+composer install
+
+# 3. Configurer l'environnement
+copy .env.example .env
+php artisan key:generate
+
+# 4. Configurer la BDD dans .env
+# DB_DATABASE=erp_saas
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# 5. Créer la base de données MySQL
+mysql -u root -p
+CREATE DATABASE erp_saas;
+EXIT;
+
+# 6. Exécuter migrations + seeders
+php artisan migrate --seed
+
+# 7. Créer lien storage
+php artisan storage:link
+
+# 8. Lancer le serveur
+php artisan serve

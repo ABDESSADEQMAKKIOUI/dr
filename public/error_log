@@ -1,0 +1,88 @@
+[21-Apr-2026 00:35:32 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[21-Apr-2026 00:35:32 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[21-Apr-2026 00:35:34 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[21-Apr-2026 00:35:34 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[21-Apr-2026 00:35:35 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[21-Apr-2026 00:35:35 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[21-Apr-2026 00:35:35 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[21-Apr-2026 00:35:35 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:12:20 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:12:20 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:17:39 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:17:39 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:17:43 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:17:43 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:17:49 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:17:49 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:21:16 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:21:16 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:53:11 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:53:11 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:53:16 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:53:16 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:53:19 Africa/Casablanca] PHP Warning:  require(/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 11:53:19 Africa/Casablanca] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cfpssma1/public_html/dr.cfpss.ma/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php on line 13
+[25-Apr-2026 13:20:09 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/public/index.php(13): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 15:40:59 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php(13): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 15:41:07 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php(13): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22
+[25-Apr-2026 17:28:57 Africa/Casablanca] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/autoload_real.php(25): require()
+#1 /home/cfpssma1/public_html/dr.cfpss.ma/vendor/autoload.php(22): ComposerAutoloaderInit626b9e7ddd47fb7eff9aaa53cce0c9ad::getLoader()
+#2 /home/cfpssma1/public_html/dr.cfpss.ma/public/index.php(13): require('/home/cfpssma1/...')
+#3 {main}
+  thrown in /home/cfpssma1/public_html/dr.cfpss.ma/vendor/composer/platform_check.php on line 22

@@ -1,0 +1,13 @@
+@extends('layouts.app')
+@section('title', __('app.quotations'))
+@php
+$pageTitle = __('app.quotations');
+$breadcrumbs = [['label' => __('app.dashboard'), 'url' => route('dashboard')], ['label' => __('app.quotations'), 'url' => route('quotations.index')]];
+@endphp
+@section('content')
+<div class="card">
+    <div class="card-header flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-800">{{ __('app.all_quotations') }}</h3><a href="{{ route('quotations.create') }}" class="btn btn-primary btn-sm"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>{{ __('app.add_quotation') }}</a></div>
+    <div class="overflow-x-auto"><table class="table"><thead><tr><th>#</th><th>{{ __('app.reference') }}</th><th>{{ __('app.customer') }}</th><th>{{ __('app.date') }}</th><th>{{ __('app.total') }}</th><th>{{ __('app.status') }}</th><th>{{ __('app.created_by') }}</th><th>{{ __('app.actions') }}</th></tr></thead>
+    <tbody>@forelse($quotations ?? [] as $quote)<tr><td>{{ $loop->iteration }}</td><td class="font-semibold">{{ $quote->reference }}</td><td>{{ $quote->customer->name }}</td><td>{{ \Carbon\Carbon::parse($quote->date ?? $quote->created_at)->format('d M Y') }}</td><td>{{ number_format($quote->total_amount ?? 0, 2) }} DH</td><td>@if($quote->status == 'sent')<span class="badge badge-info">{{ __('app.sent') }}</span>@elseif($quote->status == 'accepted')<span class="badge badge-success">{{ __('app.approved') }}</span>@else<span class="badge badge-secondary">{{ __('app.draft') }}</span>@endif</td><td>{{ $quote->user->full_name ?? '—' }}</td><td><div class="flex space-x-2"><a href="{{ route('quotations.show', $quote->id) }}" class="text-blue-600" title="{{ __('app.view') }}"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></a>@if($quote->status != 'converted')<form method="POST" action="{{ route('quotations.convert', $quote->id) }}" class="inline">@csrf<button type="submit" class="text-green-600" title="{{ __('app.confirm') }}"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></button></form>@endif</div></td></tr>@empty<tr><td colspan="7" class="text-center text-gray-500 py-8">{{ __('app.no_results') }}</td></tr>@endforelse</tbody></table></div>
+</div>
+@endsection

@@ -1,0 +1,14 @@
+@extends('layouts.app')
+@section('title', __('app.purchase_returns'))
+@php
+$pageTitle = __('app.purchase_returns');
+$breadcrumbs = [['label' => __('app.dashboard'), 'url' => route('dashboard')], ['label' => __('app.purchases'), 'url' => route('purchases.index')], ['label' => __('app.returns'), 'url' => '']];
+@endphp
+@section('content')
+<div class="card">
+    <div class="card-header flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-800">{{ __('app.purchase_returns') }}</h3><a href="{{ route('purchases.returns.create') }}" class="btn btn-primary btn-sm"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>{{ __('app.new_return') }}</a></div>
+    <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4"><div><input type="date" class="form-control" placeholder="{{ __('app.from_date') }}"></div><div><input type="date" class="form-control" placeholder="{{ __('app.to_date') }}"></div><div><select class="form-control"><option>{{ __('app.all_suppliers') }}</option>@foreach($suppliers ?? [] as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach</select></div></div>
+    <div class="overflow-x-auto"><table class="table"><thead><tr><th>#</th><th>{{ __('app.reference') }}</th><th>{{ __('app.purchase_ref') }}</th><th>{{ __('app.supplier') }}</th><th>{{ __('app.date') }}</th><th>{{ __('app.items') }}</th><th>{{ __('app.total') }}</th><th>{{ __('app.status') }}</th><th>{{ __('app.actions') }}</th></tr></thead>
+    <tbody>@forelse($returns ?? [] as $return)<tr><td>{{ $loop->iteration }}</td><td class="font-semibold">{{ $return->reference }}</td><td><a href="{{ route('purchases.show', $return->purchase_id) }}" class="text-blue-600 hover:underline">{{ $return->purchase->reference }}</a></td><td>{{ $return->purchase->supplier->name }}</td><td>{{ optional($return->date)->format('M d, Y') }}</td><td>{{ $return->items_count ?? 0 }} {{ __('app.items') }}</td><td class="font-semibold text-red-600">{{ number_format($return->total_amount, 2) }} DH</td><td><span class="badge {{ $return->status == 'approved' ? 'badge-success' : 'badge-warning' }}">{{ __('app.' . $return->status ?? 'pending') }}</span></td><td><a href="{{ route('purchases.returns.show', $return->id) }}" class="text-blue-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></a></td></tr>@empty<tr><td colspan="9" class="text-center text-gray-500 py-8">{{ __('app.no_purchase_returns_found') }}</td></tr>@endforelse</tbody></table></div>
+</div>
+@endsection

@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php fix_blade.php)",
+      "Bash(php check_views.php)",
+      "Bash(npm run *)",
+      "Bash(php -l app/Http/Controllers/ProductController.php)",
+      "Bash(php -l lang/fr/app.php)",
+      "Bash(sed -i 's/value=\"in_transit\".*__\\('\\\\''app.in_transit'\\\\''\\).*/value=\"sent\" {{ \\\\$transfer->status == '\\\\''sent'\\\\'' ? '\\\\''selected'\\\\'' : '\\\\'''\\\\'' }}>{{ __\\('\\\\''app.sent'\\\\''\\) }}<\\\\/option>/' resources/views/stock/transfers/edit.blade.php)",
+      "Bash(sed -i 's/value=\"completed\".*__\\('\\\\''app.completed'\\\\''\\).*/value=\"received\" {{ \\\\$transfer->status == '\\\\''received'\\\\'' ? '\\\\''selected'\\\\'' : '\\\\'''\\\\'' }}>{{ __\\('\\\\''app.received'\\\\''\\) }}<\\\\/option>/' resources/views/stock/transfers/edit.blade.php)",
+      "Bash(php artisan tinker '--execute= *)",
+      "Bash(php -l app/Http/Controllers/StockController.php)",
+      "Bash(cat)",
+      "Bash(php -r ' *)",
+      "Bash(php -l lang/en/app.php lang/fr/app.php)",
+      "Bash(php artisan *)",
+      "Bash(sed -n '50,58p' c:/Users/Asus/Desktop/call/facturation/resources/views/system/error-logs.blade.php)",
+      "Bash(sed -n '294,302p' c:/Users/Asus/Desktop/call/facturation/resources/views/tenants/edit.blade.php)",
+      "Bash(grep -rn \"user_id\" database/migrations/*sales*)",
+      "Bash(grep -rn \"user_id\" database/migrations/*sale*)",
+      "WebFetch(domain:www.compta-facile.com)",
+      "WebSearch",
+      "WebFetch(domain:www.pennylane.com)",
+      "WebFetch(domain:www.legalstart.fr)",
+      "Bash(grep -v \"^\\\\s*$\")",
+      "Bash(php -r \"require 'vendor/autoload.php'; echo 'OK';\")",
+      "Bash(grep -n 'invoice_number\\\\|invoice_date\\\\|$invoice->paid\\\\b\\\\|$invoice->total\\\\b\\\\|$invoice->tax\\\\b\\\\|$invoice->subtotal\\\\b\\\\|$invoice->discount\\\\b\\\\|$invoice->shipping\\\\b' c:/Users/Asus/Desktop/call/facturation/resources/views/invoices/show.blade.php)",
+      "Bash(grep -n 'getNameAttribute\\\\|first_name\\\\|last_name\\\\|protected $appends\\\\|function name' c:/Users/Asus/Desktop/call/facturation/app/Models/User.php)",
+      "Bash(composer install *)",
+      "Bash(composer update *)",
+      "Bash(grep \"Controllers\\\\\\\\\" \"c:/Users/Asus/Desktop/call/facturation/routes/web.php\")",
+      "Bash(awk '-F\\\\' '{print $NF}')"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}
