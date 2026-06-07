@@ -240,12 +240,14 @@ class SaleController extends Controller
 
         $subtotal = 0;
         $items = [];
+        $taxRate = Setting::get('default_tax_rate', 0);
 
         foreach ($validated['items'] as $item) {
             $productModel = Product::find($item['id']);
             $unitCost     = $productModel ? $productModel->cost_price : 0;
             $itemSubtotal = $item['quantity'] * $item['price'];
             $subtotal    += $itemSubtotal;
+            $itemTaxAmount = $itemSubtotal * ($taxRate / 100);
 
             $items[] = [
                 'product_id'      => $item['id'],
@@ -253,13 +255,12 @@ class SaleController extends Controller
                 'price'           => $item['price'],
                 'unit_cost'       => $unitCost,
                 'subtotal'        => $itemSubtotal,
-                'tax_rate'        => 0,
-                'tax_amount'      => 0,
+                'tax_rate'        => $taxRate,
+                'tax_amount'      => $itemTaxAmount,
                 'discount_amount' => 0,
             ];
         }
 
-        $taxRate     = 20; // default POS tax rate
         $taxAmount   = $subtotal * ($taxRate / 100);
         $discount    = $validated['discount'] ?? 0;
         $totalAmount = $subtotal + $taxAmount - $discount;

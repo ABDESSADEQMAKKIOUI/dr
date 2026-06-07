@@ -180,9 +180,9 @@ $breadcrumbs = [
                         <label class="form-label">{{ __('app.tax') }} (%)</label>
                         <div class="relative">
                             <input type="number" step="0.01" name="tax_rate"
-                                   value="{{ old('tax_rate', 20) }}"
+                                   value="{{ old('tax_rate', 0) }}"
                                    class="form-control pr-8"
-                                   placeholder="20">
+                                   placeholder="0">
                             <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">%</span>
                         </div>
                     </div>

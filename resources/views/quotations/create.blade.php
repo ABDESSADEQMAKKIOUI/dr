@@ -14,7 +14,7 @@ $breadcrumbs = [['label' => 'Dashboard', 'url' => route('dashboard')], ['label' 
             <div class="form-group"><label class="form-label">Warehouse *</label><select name="warehouse_id" class="form-control" required><option value="">Select Warehouse</option>@foreach($warehouses ?? [] as $w)<option value="{{ $w->id }}">{{ $w->name }}</option>@endforeach</select></div>
             <div class="form-group"><label class="form-label">Quotation Date *</label><input type="date" name="quotation_date" value="{{ old('quotation_date', date('Y-m-d')) }}" class="form-control" required></div>
             <div class="form-group"><label class="form-label">Valid Until *</label><input type="date" name="valid_until" value="{{ old('valid_until', date('Y-m-d', strtotime('+30 days'))) }}" class="form-control" required></div>
-            <div class="form-group"><label class="form-label">Tax (%)</label><input type="number" step="0.01" name="tax" value="{{ old('tax', 20) }}" class="form-control"></div>
+            <div class="form-group"><label class="form-label">Tax (%)</label><input type="number" step="0.01" name="tax" value="{{ old('tax', 0) }}" class="form-control"></div>
             <div class="form-group"><label class="form-label">Discount</label><input type="number" step="0.01" name="discount" value="{{ old('discount', 0) }}" class="form-control"></div>
             <div class="form-group"><label class="form-label">Shipping Cost</label><input type="number" step="0.01" name="shipping" value="{{ old('shipping', 0) }}" class="form-control"></div>
         </div>

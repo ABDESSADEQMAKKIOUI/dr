@@ -141,7 +141,7 @@ class User extends Authenticatable
      */
     public function hasRole(string $role): bool
     {
-        return $this->roles()->where('name', $role)->exists();
+        return $this->roles()->whereRaw('LOWER(name) = ?', [strtolower($role)])->exists();
     }
 
     /**
@@ -149,7 +149,12 @@ class User extends Authenticatable
      */
     public function hasAnyRole(array $roles): bool
     {
-        return $this->roles()->whereIn('name', $roles)->exists();
+        $normalizedRoles = array_map('strtolower', $roles);
+
+        return $this->roles->pluck('name')
+            ->map(fn ($name) => strtolower($name))
+            ->intersect($normalizedRoles)
+            ->isNotEmpty();
     }
 
     /**
@@ -158,7 +163,7 @@ class User extends Authenticatable
     public function hasPermission(string $permission): bool
     {
         return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
-            $query->where('name', $permission);
+            $query->whereRaw('LOWER(name) = ?', [strtolower($permission)]);
         })->exists();
     }
 }

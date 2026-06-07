@@ -25,7 +25,7 @@ class ProductFactory extends Factory
             'cost_price' => $costPrice,
             'sale_price' => $salePrice,
             'tax_type' => 'exclusive',
-            'tax_rate' => 20.00,
+            'tax_rate' => 0.00,
             'stock_alert' => 10,
             'stock_quantity' => fake()->numberBetween(0, 100),
             'description' => fake()->paragraph(),

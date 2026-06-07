@@ -30,7 +30,7 @@ class SettingsSeeder extends Seeder
             ['key' => 'invoice_footer', 'value' => 'Merci pour votre confiance', 'group' => 'invoice', 'type' => 'textarea'],
             
             // Tax
-            ['key' => 'default_tax_rate', 'value' => '20', 'group' => 'tax', 'type' => 'number'],
+            ['key' => 'default_tax_rate', 'value' => '0', 'group' => 'tax', 'type' => 'number'],
             ['key' => 'tax_name', 'value' => 'TVA', 'group' => 'tax', 'type' => 'text'],
             
             // Email

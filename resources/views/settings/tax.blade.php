@@ -28,7 +28,7 @@ $accent = \App\Models\Setting::where('key','invoice_color')->value('value') ?? '
   <div class="mc-body-lg grid grid-cols-1 md:grid-cols-3 gap-5">
     <div class="fi-group">
       <label class="fi-label">{{ __('app.default_tax_rate') }} (%)</label>
-      <input type="number" step="0.01" name="default_tax_rate" value="{{ old('default_tax_rate', $settings['default_tax_rate'] ?? 20) }}" class="fi">
+      <input type="number" step="0.01" name="default_tax_rate" value="{{ old('default_tax_rate', $settings['default_tax_rate'] ?? 0) }}" class="fi">
     </div>
     <div class="fi-group">
       <label class="fi-label">{{ __('app.tax_calculation_method') }}</label>

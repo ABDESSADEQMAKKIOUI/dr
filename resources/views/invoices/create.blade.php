@@ -13,7 +13,7 @@ $breadcrumbs = [['label' => __('app.dashboard'), 'url' => route('dashboard')], [
             <div class="form-group"><label class="form-label">{{ __('app.customer') }} *</label><select name="customer_id" class="form-control" required><option value="">{{ __('app.select_customer') }}</option>@foreach($customers ?? [] as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select>@error('customer_id')<span class="form-error">{{ $message }}</span>@enderror</div>
             <div class="form-group"><label class="form-label">{{ __('app.invoice_date') }} *</label><input type="date" name="invoice_date" value="{{ old('invoice_date', date('Y-m-d')) }}" class="form-control" required></div>
             <div class="form-group"><label class="form-label">{{ __('app.due_date') }} *</label><input type="date" name="due_date" value="{{ old('due_date', date('Y-m-d', strtotime('+15 days'))) }}" class="form-control" required></div>
-            <div class="form-group"><label class="form-label">{{ __('app.tax_percent') }}</label><input type="number" step="0.01" name="tax" value="{{ old('tax', 20) }}" class="form-control"></div>
+            <div class="form-group"><label class="form-label">{{ __('app.tax_percent') }}</label><input type="number" step="0.01" name="tax" value="{{ old('tax', 0) }}" class="form-control"></div>
             <div class="form-group"><label class="form-label">{{ __('app.discount') }}</label><input type="number" step="0.01" name="discount" value="{{ old('discount', 0) }}" class="form-control"></div>
             <div class="form-group"><label class="form-label">{{ __('app.shipping_cost') }}</label><input type="number" step="0.01" name="shipping" value="{{ old('shipping', 0) }}" class="form-control"></div>
         </div>

@@ -13,7 +13,7 @@ $breadcrumbs = [['label' => __('app.dashboard'), 'url' => route('dashboard')], [
             <div class="form-group"><label class="form-label">{{ __('app.customer') }}</label><select name="customer_id" class="form-control"><option value="">Walk-in Customer</option>@foreach($customers ?? [] as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select></div>
             <div class="form-group"><label class="form-label">{{ __('app.warehouse') }} *</label><select name="warehouse_id" class="form-control" required><option value="">{{ __('app.select_warehouse') }}</option>@foreach($warehouses ?? [] as $w)<option value="{{ $w->id }}">{{ $w->name }}</option>@endforeach</select></div>
             <div class="form-group"><label class="form-label">{{ __('app.date') }} *</label><input type="date" name="sale_date" value="{{ old('sale_date', date('Y-m-d')) }}" class="form-control" required></div>
-            <div class="form-group"><label class="form-label">{{ __('app.tax') }} (%)</label><input type="number" step="0.01" name="tax" value="{{ old('tax', 20) }}" class="form-control"></div>
+            <div class="form-group"><label class="form-label">{{ __('app.tax') }} (%)</label><input type="number" step="0.01" name="tax" value="{{ old('tax', 0) }}" class="form-control"></div>
             <div class="form-group"><label class="form-label">{{ __('app.discount') }}</label><input type="number" step="0.01" name="discount" value="{{ old('discount', 0) }}" class="form-control"></div>
             <div class="form-group"><label class="form-label">{{ __('app.shipping') }}</label><input type="number" step="0.01" name="shipping" value="{{ old('shipping', 0) }}" class="form-control"></div>
         </div>

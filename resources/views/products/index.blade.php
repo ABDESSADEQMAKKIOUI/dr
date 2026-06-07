@@ -15,7 +15,50 @@ $breadcrumbs = [
 @push('styles')
 <style>
 @media print {
-    .no-print { display: none !important; }
+    /* Hide all page chrome except the product table */
+    body * {
+        visibility: hidden !important;
+    }
+
+    .table-wrapper,
+    .table-wrapper * {
+        visibility: visible !important;
+    }
+
+    .table-wrapper {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+    }
+
+    .no-print,
+    .filter-bar,
+    .pagination,
+    .stat-mini,
+    .card-header .btn,
+    .card-header .btn-outline,
+    .card-header .btn-primary,
+    .action-btn,
+    .product-checkbox,
+    #select-all,
+    #products-table th:first-child,
+    #products-table td:first-child,
+    #products-table th:last-child,
+    #products-table td:last-child {
+        display: none !important;
+    }
+
+    #products-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    #products-table th,
+    #products-table td {
+        border: 1px solid #ddd !important;
+        padding: 0.6rem !important;
+    }
 }
 </style>
 @endpush
