@@ -213,7 +213,7 @@
                     <span id="subtotal" class="font-semibold text-slate-700">0.00 DH</span>
                 </div>
                 <div class="flex justify-between text-sm text-slate-500">
-                    <span>{{ __('app.tax') }} (20%)</span>
+                    <span>{{ __('app.tax') }} ({{ \App\Models\Setting::get('default_tax_rate', 0) }}%)</span>
                     <span id="tax" class="font-semibold text-slate-700">0.00 DH</span>
                 </div>
                 <div class="flex justify-between items-center text-sm text-slate-500">
@@ -487,15 +487,16 @@ function decreaseQuantity(index) {
 }
 function removeItem(index) { cart.splice(index, 1); renderCart(); }
 
-function updateTotals() {
-    const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-    const tax      = subtotal * 0.20;
-    const discount = parseFloat(document.getElementById('discount').value) || 0;
-    const total    = subtotal + tax - discount;
-    document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' DH';
-    document.getElementById('tax').textContent      = tax.toFixed(2) + ' DH';
-    document.getElementById('total').textContent    = total.toFixed(2) + ' DH';
-}
+ function updateTotals() {
+     const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+     const taxRate  = parseFloat('{{ \App\Models\Setting::get("default_tax_rate", 0) }}') || 0;
+     const tax      = subtotal * (taxRate / 100);
+     const discount = parseFloat(document.getElementById('discount').value) || 0;
+     const total    = subtotal + tax - discount;
+     document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' DH';
+     document.getElementById('tax').textContent      = tax.toFixed(2) + ' DH';
+     document.getElementById('total').textContent    = total.toFixed(2) + ' DH';
+ }
 document.getElementById('discount').addEventListener('input', updateTotals);
 
 // ==========================================
