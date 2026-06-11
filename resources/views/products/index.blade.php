@@ -60,6 +60,31 @@ $breadcrumbs = [
         padding: 0.6rem !important;
     }
 }
+
+/* Page-specific override: allow products page content to use full width */
+main > .max-w-7xl.mx-auto {
+    max-width: 100% !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+@media (min-width: 1024px) {
+    main > .max-w-7xl.mx-auto {
+        max-width: 100% !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+    }
+}
+
+.card {
+    max-width: none !important;
+}
+
+.table-wrapper,
+.table {
+    max-width: none !important;
+    width: 100% !important;
+}
 </style>
 @endpush
 
