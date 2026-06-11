@@ -5,6 +5,34 @@ $pageTitle = __('app.categories');
 $breadcrumbs = [['label' => __('app.dashboard'), 'url' => route('dashboard')], ['label' => __('app.products'), 'url' => route('products.index')], ['label' => __('app.categories'), 'url' => '']];
 @endphp
 @section('content')
+@push('styles')
+<style>
+/* Page-specific override: allow categories page content to use full width */
+main > .max-w-7xl.mx-auto {
+    max-width: 100% !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+@media (min-width: 1024px) {
+    main > .max-w-7xl.mx-auto {
+        max-width: 100% !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+    }
+}
+
+.card {
+    max-width: none !important;
+}
+
+.table-wrapper,
+.table {
+    max-width: none !important;
+    width: 100% !important;
+}
+</style>
+@endpush
 <div class="card">
     <div class="card-header flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-800">{{ __('app.all') }} {{ __('app.categories') }}</h3><a href="{{ route('products.categories.create') }}" class="btn btn-primary btn-sm"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>{{ __('app.add_category') }}</a></div>
 
