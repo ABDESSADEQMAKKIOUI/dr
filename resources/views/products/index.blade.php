@@ -85,6 +85,17 @@ main > .max-w-7xl.mx-auto {
     max-width: none !important;
     width: 100% !important;
 }
+
+/* Strong override: span viewport width minus sidebar (16rem == 256px) */
+html#html-root main > .max-w-7xl.mx-auto {
+    width: calc(100vw - 16rem) !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+.table-wrapper { overflow-x: auto !important; }
 </style>
 @endpush
 
@@ -175,8 +186,8 @@ main > .max-w-7xl.mx-auto {
     </div>
 
     {{-- ── Filter bar ──────────────────────────────────────────────── --}}
-        <div class="md:grid md:grid-cols-4 gap-4">
-        <form id="product-filter-form" method="GET" action="{{ route('products.index') }}" class="filter-bar md:col-span-1">
+        <div class="md:grid md:grid-cols-12 gap-4">
+        <form id="product-filter-form" method="GET" action="{{ route('products.index') }}" class="filter-bar md:col-span-3">
         {{-- Search --}}
         <div class="filter-group flex-1 min-w-48">
             <label class="filter-label">{{ __('app.search') }}</label>
@@ -242,9 +253,9 @@ main > .max-w-7xl.mx-auto {
     </form>
 
     {{-- ── Table ────────────────────────────────────────────────────── --}}
-        <div class="md:col-span-3">
-        <div class="table-wrapper w-full">
-        <table class="table min-w-full" id="products-table">
+    <div class="md:col-span-9"> 
+    <div class="table-wrapper w-full overflow-x-auto">
+    <table class="table min-w-full w-full" id="products-table">
             <thead>
                 <tr>
                     <th class="w-10">
