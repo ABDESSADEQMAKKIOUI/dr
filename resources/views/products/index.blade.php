@@ -216,8 +216,8 @@ $breadcrumbs = [
     </form>
 
     {{-- ── Table ────────────────────────────────────────────────────── --}}
-    <div class="table-wrapper">
-        <table class="table" id="products-table">
+    <div class="table-wrapper w-full">
+        <table class="table min-w-full" id="products-table">
             <thead>
                 <tr>
                     <th class="w-10">
