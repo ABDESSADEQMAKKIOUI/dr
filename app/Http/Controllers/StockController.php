@@ -253,6 +253,8 @@ class StockController extends Controller
         $stats = [
             'total_products' => (clone $statsQuery)->count(),
             'total_value' => (clone $statsQuery)->selectRaw('SUM(stock_quantity * sale_price) as total')->value('total') ?? 0,
+            'purchase_total' => (clone $statsQuery)->selectRaw('SUM(COALESCE(cost_price, 0) * COALESCE(stock_quantity, 0)) as total')->value('total') ?? 0,
+            'sale_total' => (clone $statsQuery)->selectRaw('SUM(COALESCE(sale_price, 0) * COALESCE(stock_quantity, 0)) as total')->value('total') ?? 0,
             'low_stock' => (clone $statsQuery)->whereColumn('stock_quantity', '<=', 'stock_alert')->where('stock_quantity', '>', 0)->count(),
             'out_of_stock' => (clone $statsQuery)->where('stock_quantity', '<=', 0)->count(),
         ];

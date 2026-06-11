@@ -15,7 +15,7 @@ $breadcrumbs = [['label' => __('app.dashboard'), 'url' => route('dashboard')], [
     </div>
     
     <!-- Stats Cards -->
-    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
         <div class="bg-blue-50 p-4 rounded-lg">
             <p class="text-blue-600 text-sm mb-1">{{ __('app.total') }} {{ __('app.products') }}</p>
             <h4 class="text-2xl font-bold text-blue-700">{{ $stats['total_products'] ?? 0 }}</h4>
@@ -23,6 +23,14 @@ $breadcrumbs = [['label' => __('app.dashboard'), 'url' => route('dashboard')], [
         <div class="bg-green-50 p-4 rounded-lg">
             <p class="text-green-600 text-sm mb-1">{{ __('app.total') }} {{ __('app.value') }}</p>
             <h4 class="text-2xl font-bold text-green-700">{{ number_format($stats['total_value'] ?? 0, 2) }} DH</h4>
+        </div>
+        <div class="bg-slate-50 p-4 rounded-lg">
+            <p class="text-slate-600 text-sm mb-1">{{ __('app.total_purchase_value') ?? 'Total Purchase Value' }}</p>
+            <h4 class="text-2xl font-bold text-slate-700">{{ number_format($stats['purchase_total'] ?? 0, 2) }} DH</h4>
+        </div>
+        <div class="bg-slate-50 p-4 rounded-lg">
+            <p class="text-slate-600 text-sm mb-1">{{ __('app.total_sale_value') ?? 'Total Sale Value' }}</p>
+            <h4 class="text-2xl font-bold text-slate-700">{{ number_format($stats['sale_total'] ?? 0, 2) }} DH</h4>
         </div>
         <div class="bg-orange-50 p-4 rounded-lg">
             <p class="text-orange-600 text-sm mb-1">{{ __('app.low_stock') }}</p>

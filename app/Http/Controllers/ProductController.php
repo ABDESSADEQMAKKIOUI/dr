@@ -29,15 +29,11 @@ class ProductController extends Controller
                             ->whereColumn('stock_quantity', '<=', 'stock_alert')->count();
         $outOfStockCount = Product::where('stock_quantity', '<=', 0)->count();
 
-        $inventoryPurchaseValue = Product::select(DB::raw('SUM(COALESCE(cost_price, 0) * COALESCE(stock_quantity, 0)) as total'))->value('total') ?? 0;
-        $inventorySaleValue     = Product::select(DB::raw('SUM(COALESCE(sale_price, 0) * COALESCE(stock_quantity, 0)) as total'))->value('total') ?? 0;
-
         $categories = Category::orderBy('name')->get();
         $brands     = Brand::orderBy('name')->get();
 
         return view('products.index', compact(
             'products', 'inStockCount', 'lowStockCount', 'outOfStockCount',
-            'inventoryPurchaseValue', 'inventorySaleValue',
             'categories', 'brands'
         ));
     }
