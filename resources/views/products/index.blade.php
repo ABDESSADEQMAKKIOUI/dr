@@ -60,42 +60,6 @@ $breadcrumbs = [
         padding: 0.6rem !important;
     }
 }
-
-/* Page-specific override: allow products page content to use full width */
-main > .max-w-7xl.mx-auto {
-    max-width: 100% !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-}
-
-@media (min-width: 1024px) {
-    main > .max-w-7xl.mx-auto {
-        max-width: 100% !important;
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
-    }
-}
-
-.card {
-    max-width: none !important;
-}
-
-.table-wrapper,
-.table {
-    max-width: none !important;
-    width: 100% !important;
-}
-
-/* Strong override: span viewport width minus sidebar (16rem == 256px) */
-html#html-root main > .max-w-7xl.mx-auto {
-    width: calc(100vw - 16rem) !important;
-    max-width: none !important;
-    margin-left: 0 !important;
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
-}
-
-.table-wrapper { overflow-x: auto !important; }
 </style>
 @endpush
 
@@ -149,6 +113,33 @@ html#html-root main > .max-w-7xl.mx-auto {
             <div class="stat-mini-label">{{ __('app.out_of_stock') }}</div>
         </div>
     </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 no-print">
+    <div class="stat-mini">
+        <div class="stat-mini-icon bg-slate-100">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+            </svg>
+        </div>
+        <div>
+            <div class="stat-mini-value">{{ number_format($inventoryPurchaseValue ?? 0, 2) }} DH</div>
+            <div class="stat-mini-label">{{ __('app.total_purchase_value') ?? 'Total Purchase Value' }}</div>
+        </div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-mini-icon bg-slate-100">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+            </svg>
+        </div>
+        <div>
+            <div class="stat-mini-value">{{ number_format($inventorySaleValue ?? 0, 2) }} DH</div>
+            <div class="stat-mini-label">{{ __('app.total_sale_value') ?? 'Total Sale Value' }}</div>
+        </div>
+    </div>
+</div>
+
 {{-- ── Main card ─────────────────────────────────────────────────── --}}
 <div class="card">
 
@@ -186,8 +177,7 @@ html#html-root main > .max-w-7xl.mx-auto {
     </div>
 
     {{-- ── Filter bar ──────────────────────────────────────────────── --}}
-        <div class="md:grid md:grid-cols-12 gap-4">
-        <form id="product-filter-form" method="GET" action="{{ route('products.index') }}" class="filter-bar md:col-span-3">
+    <form id="product-filter-form" method="GET" action="{{ route('products.index') }}" class="filter-bar">
         {{-- Search --}}
         <div class="filter-group flex-1 min-w-48">
             <label class="filter-label">{{ __('app.search') }}</label>
@@ -253,9 +243,8 @@ html#html-root main > .max-w-7xl.mx-auto {
     </form>
 
     {{-- ── Table ────────────────────────────────────────────────────── --}}
-    <div class="md:col-span-9"> 
-    <div class="table-wrapper w-full overflow-x-auto">
-    <table class="table min-w-full w-full" id="products-table">
+    <div class="table-wrapper">
+        <table class="table" id="products-table">
             <thead>
                 <tr>
                     <th class="w-10">
@@ -396,11 +385,6 @@ html#html-root main > .max-w-7xl.mx-auto {
         {{ $products->links() }}
     </div>
     @endif
-
-        </div> {{-- md:col-span-3 --}}
-        </div> {{-- md:grid --}}
-
-    </div>
 
 </div>
 @endsection
