@@ -150,7 +150,8 @@ $breadcrumbs = [
     </div>
 
     {{-- ── Filter bar ──────────────────────────────────────────────── --}}
-    <form id="product-filter-form" method="GET" action="{{ route('products.index') }}" class="filter-bar">
+        <div class="md:grid md:grid-cols-4 gap-4">
+        <form id="product-filter-form" method="GET" action="{{ route('products.index') }}" class="filter-bar md:col-span-1">
         {{-- Search --}}
         <div class="filter-group flex-1 min-w-48">
             <label class="filter-label">{{ __('app.search') }}</label>
@@ -216,7 +217,8 @@ $breadcrumbs = [
     </form>
 
     {{-- ── Table ────────────────────────────────────────────────────── --}}
-    <div class="table-wrapper w-full">
+        <div class="md:col-span-3">
+        <div class="table-wrapper w-full">
         <table class="table min-w-full" id="products-table">
             <thead>
                 <tr>
@@ -358,6 +360,11 @@ $breadcrumbs = [
         {{ $products->links() }}
     </div>
     @endif
+
+        </div> {{-- md:col-span-3 --}}
+        </div> {{-- md:grid --}}
+
+    </div>
 
 </div>
 @endsection
