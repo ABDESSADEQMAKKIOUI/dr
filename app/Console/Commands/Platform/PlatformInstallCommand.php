@@ -35,7 +35,8 @@ class PlatformInstallCommand extends Command
         // default `migrate` never sees database/migrations/platform/ because
         // Migrator globs non-recursively.
         $exit = Artisan::call('migrate', [
-            '--database' => $connection,
+            // Elevated: the control-plane user has DML only.
+            '--database' => config('tenancy.platform_admin_connection'),
             '--path' => 'database/migrations/platform',
             '--force' => true,
             '--no-interaction' => true,

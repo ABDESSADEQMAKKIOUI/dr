@@ -62,7 +62,10 @@ Route::prefix('install')->name('install.')->group(function () {
 // Authentication Routes
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('login', [AuthController::class, 'login']);
+    // Brute-force protection. Every tenant's ERP login is internet-facing;
+    // limiter defined in PlatformServiceProvider, keyed per host so one
+    // company's lockout cannot affect another's.
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:erp-login');
     Route::get('register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('register', [AuthController::class, 'register']);
     Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');

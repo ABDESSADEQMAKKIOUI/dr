@@ -102,6 +102,10 @@ final class TenantProvisioner
                 //    database/migrations/platform/ and Migrator globs
                 //    non-recursively, so they cannot land in a tenant schema.
                 $this->runStep('migrate', fn () => Artisan::call('migrate', [
+                    // Elevated connection: the ERP user has DML only and cannot
+                    // create tables. Tenancy::useDatabase has already pointed
+                    // tenant_admin at this tenant's schema.
+                    '--database' => 'tenant_admin',
                     '--force' => true,
                     '--no-interaction' => true,
                 ]));
@@ -172,6 +176,10 @@ final class TenantProvisioner
         try {
             Tenancy::run($tenant, function (): void {
                 $this->runStep('migrate', fn () => Artisan::call('migrate', [
+                    // Elevated connection: the ERP user has DML only and cannot
+                    // create tables. Tenancy::useDatabase has already pointed
+                    // tenant_admin at this tenant's schema.
+                    '--database' => 'tenant_admin',
                     '--force' => true,
                     '--no-interaction' => true,
                 ]));
@@ -200,6 +208,10 @@ final class TenantProvisioner
         try {
             Tenancy::run($tenant, function (): void {
                 $this->runStep('migrate', fn () => Artisan::call('migrate', [
+                    // Elevated connection: the ERP user has DML only and cannot
+                    // create tables. Tenancy::useDatabase has already pointed
+                    // tenant_admin at this tenant's schema.
+                    '--database' => 'tenant_admin',
                     '--force' => true,
                     '--no-interaction' => true,
                 ]));
@@ -453,8 +465,13 @@ final class TenantProvisioner
                 @mkdir($dir, 0775, true);
             }
 
+            // The ".request" suffix is REQUIRED, not decorative: the certbot
+            // sidecar's drain loop globs "$REQUEST_DIR"/*.request and renames
+            // each entry to .done or .failed as it goes. A file written without
+            // the suffix is never matched, never issued and never reported — the
+            // tenant just stays on the self-signed fallback forever.
             $host = $tenant->slug.'.'.config('tenancy.root_domain');
-            @file_put_contents(rtrim($dir, '/').'/'.$host, $host."\n");
+            @file_put_contents(rtrim($dir, '/').'/'.$host.'.request', $host."\n");
         } catch (Throwable $e) {
             Log::warning('tenant cert: could not queue a request for '.$tenant->slug, [
                 'exception' => $e,

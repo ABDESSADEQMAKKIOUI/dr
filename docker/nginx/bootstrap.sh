@@ -76,6 +76,18 @@ else
     APEX_STORAGE_AUTH="$AUTH_REALM_DIRECTIVE"
 fi
 
+# The operator console. Public by default: it has its own login, its own guard,
+# per-ability authorisation and a 5/minute rate limit on the login form, so the
+# shared basic-auth password added nothing except an extra secret to distribute.
+# Set SAFM_ADMIN_BASIC_AUTH=true to put the second lock back.
+if [ "${SAFM_ADMIN_BASIC_AUTH:-false}" = "true" ]; then
+    ADMIN_AUTH="$AUTH_REALM_DIRECTIVE"
+    log "basic auth is ON for the operator console (SAFM_ADMIN_BASIC_AUTH=true)"
+else
+    ADMIN_AUTH="off"
+    log "operator console is PUBLIC — protected by its own login and rate limiting"
+fi
+
 # ── 2. Shared proxy snippet ───────────────────────────────────────────────────
 # Included from every `location` that proxies. Written here rather than shipped
 # as a file so that the four vhosts in two templates can never drift apart.
@@ -152,6 +164,30 @@ ADMIN_SSL_CERT="$1"; ADMIN_SSL_KEY="$2"
     && log "no Let's Encrypt certificate for ${ADMIN_SERVER_NAME} yet — using the placeholder" \
     || log "using the Let's Encrypt certificate for ${ADMIN_SERVER_NAME}"
 
+# ── HSTS, but only where a TRUSTED certificate is actually being served ───────
+# Strict-Transport-Security is a one-way door: once a browser has seen it, it
+# refuses plain http AND refuses to let the user click through a certificate
+# warning for max-age seconds. Sending it from a host still on the self-signed
+# placeholder would therefore lock that host out of every browser that had
+# already visited it — a self-inflicted outage with no quick undo.
+#
+# So each host gets the header only once it has a real certificate. Tenant
+# vhosts are rendered exclusively for issued certificates, so they always get it.
+#
+# includeSubDomains is deliberately OMITTED. It would apply to every tenant
+# subdomain, including ones still waiting on issuance, and turn their browser
+# warning into a hard failure.
+HSTS_MAX_AGE="${SAFM_HSTS_MAX_AGE:-31536000}"
+hsts_for() {
+    if [ "$1" = "$SELF_CERT" ]; then
+        printf '# HSTS withheld: still serving the self-signed placeholder'
+    else
+        printf 'add_header Strict-Transport-Security "max-age=%s" always;' "$HSTS_MAX_AGE"
+    fi
+}
+APEX_HSTS="$(hsts_for "$SSL_CERT")"
+ADMIN_HSTS="$(hsts_for "$ADMIN_SSL_CERT")"
+
 if [ "$SSL_CERT" = "$SELF_CERT" ] || [ "$ADMIN_SSL_CERT" = "$SELF_CERT" ]; then
     log "-------------------------------------------------------------------"
     log "  Serving a SELF-SIGNED certificate - browsers will show a warning."
@@ -192,8 +228,11 @@ sed \
     -e "s|__FALLBACK_SSL_CERT__|${SELF_CERT}|g" \
     -e "s|__FALLBACK_SSL_KEY__|${SELF_KEY}|g" \
     -e "s|__AUTH_REALM__|${AUTH_REALM_DIRECTIVE}|g" \
+    -e "s|__ADMIN_AUTH__|${ADMIN_AUTH}|g" \
     -e "s|__TENANT_AUTH__|${TENANT_AUTH}|g" \
     -e "s|__APEX_STORAGE_AUTH__|${APEX_STORAGE_AUTH}|g" \
+    -e "s|__APEX_HSTS__|${APEX_HSTS}|g" \
+    -e "s|__ADMIN_HSTS__|${ADMIN_HSTS}|g" \
     /etc/nginx/safm.conf.template > /etc/nginx/conf.d/default.conf
 
 log "serving ${SERVER_NAME}, ${ADMIN_SERVER_NAME} and *.${ROOT_DOMAIN} -> ${UPSTREAM}"

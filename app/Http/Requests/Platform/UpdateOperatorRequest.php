@@ -30,7 +30,7 @@ class UpdateOperatorRequest extends FormRequest
                 'max:190',
                 Rule::unique('platform.platform_users', 'email')->ignore($operatorId)->withoutTrashed(),
             ],
-            'password' => ['nullable', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password' => ['nullable', 'confirmed', Password::min(12)->mixedCase()->numbers()->symbols()->uncompromised()],
             'role' => ['required', Rule::in(['owner', 'admin', 'support', 'billing'])],
             'is_active' => ['nullable', 'boolean'],
         ];

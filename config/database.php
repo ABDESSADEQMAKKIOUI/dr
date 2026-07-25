@@ -77,9 +77,14 @@ return [
             'url' => env('PLATFORM_DB_URL'),
             'host' => env('PLATFORM_DB_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('PLATFORM_DB_PORT', env('DB_PORT', '3306')),
-            'database' => env('PLATFORM_DB_DATABASE', 'safm_platform'),
-            'username' => env('PLATFORM_DB_USERNAME', env('DB_USERNAME', 'root')),
-            'password' => env('PLATFORM_DB_PASSWORD', env('DB_PASSWORD', '')),
+            // safmctl_, NOT safm_. The ERP user's grant is scoped to
+            // `safm\_%`.*, so keeping the control plane outside that pattern
+            // is what stops an SQL injection in the ERP from reading operator
+            // password hashes or rewriting subscriptions.
+            'database' => env('PLATFORM_DB_DATABASE', 'safmctl_platform'),
+            // Its own MySQL identity, with no access to any tenant schema.
+            'username' => env('PLATFORM_DB_USERNAME', 'safmctl'),
+            'password' => env('PLATFORM_DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
@@ -112,6 +117,34 @@ return [
             'url' => env('PLATFORM_ADMIN_DB_URL', env('PLATFORM_DB_URL')),
             'host' => env('PLATFORM_DB_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('PLATFORM_DB_PORT', env('DB_PORT', '3306')),
+            // Defaults to the control-plane schema so `migrate
+            // --database=platform_admin` has somewhere to connect;
+            // CREATE DATABASE works regardless of the current schema.
+            'database' => env('PLATFORM_DB_DATABASE', 'safmctl_platform'),
+            'username' => env('PLATFORM_ADMIN_DB_USERNAME', env('PLATFORM_DB_USERNAME', env('DB_USERNAME', 'root'))),
+            'password' => env('PLATFORM_ADMIN_DB_PASSWORD', env('PLATFORM_DB_PASSWORD', env('DB_PASSWORD', ''))),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        // Elevated, used for exactly one thing: running migrations against a
+        // tenant schema. The ERP user holds DML only - no CREATE/ALTER/DROP TABLE -
+        // so `artisan migrate` deliberately CANNOT run on the 'mysql' connection.
+        // That is the point: a compromised ERP request cannot reshape or drop tables.
+        'tenant_admin' => [
+            'driver' => 'mysql',
+            'url' => env('PLATFORM_ADMIN_DB_URL', env('PLATFORM_DB_URL')),
+            'host' => env('PLATFORM_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('PLATFORM_DB_PORT', env('DB_PORT', '3306')),
+            // Set at runtime to the schema being migrated.
             'database' => null,
             'username' => env('PLATFORM_ADMIN_DB_USERNAME', env('PLATFORM_DB_USERNAME', env('DB_USERNAME', 'root'))),
             'password' => env('PLATFORM_ADMIN_DB_PASSWORD', env('PLATFORM_DB_PASSWORD', env('DB_PASSWORD', ''))),

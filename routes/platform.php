@@ -11,7 +11,12 @@ use App\Http\Controllers\Platform\AuditLogController;
 
 Route::middleware('guest:platform')->group(function () {
     Route::get('login',  [AuthController::class, 'showLogin'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->name('login.attempt');
+    // The console is publicly reachable and an operator can drop customer
+    // databases — this is the one route that must never be an unlimited
+    // password oracle. Limiter defined in PlatformServiceProvider.
+    Route::post('login', [AuthController::class, 'login'])
+        ->middleware('throttle:platform-login')
+        ->name('login.attempt');
 });
 
 Route::middleware('auth:platform')->group(function () {

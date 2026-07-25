@@ -12,6 +12,11 @@ return [
     // `database` key is rewritten per request. Never rename it.
     'tenant_connection'  => 'mysql',
     'platform_connection' => 'platform',
+    // Elevated (root) connections. Used ONLY for DDL: CREATE/DROP DATABASE and
+    // running migrations. The 'mysql' and 'platform' users hold DML only, so
+    // migrations deliberately cannot run on them.
+    'platform_admin_connection' => 'platform_admin',
+    'tenant_admin_connection' => 'tenant_admin',
 
     // The value DB_DATABASE points at. MUST be a schema that DOES NOT EXIST so a
     // missed swap fails closed with SQLSTATE[HY000][1049] instead of silently

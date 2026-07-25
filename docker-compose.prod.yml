@@ -32,15 +32,16 @@ services:
       LOG_LEVEL: warning
 
       TENANCY_ENABLED: "true"
-      # The app connects as root: provisioning issues CREATE DATABASE and DROP
-      # DATABASE, which the `safm` user has no grant for on *.*.
+      # Root is NOT the app identity. It backs the platform_admin and
+      # tenant_admin connections only: CREATE/DROP DATABASE and migrations.
       DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
 
-      # The elevated identity, reached only through the 'platform_admin'
-      # connection in App\Services\Tenancy\TenantDatabaseManager, and used only
-      # for CREATE DATABASE / DROP DATABASE. The ERP itself connects as the
-      # limited DB_USERNAME above, which docker/mysql/init/10-safm-grants.sh
-      # grants the `safm\_%` namespace and nothing wider.
+      # Control plane: its own identity and its own schema, both OUTSIDE the
+      # safm_ namespace the ERP user is granted.
+      PLATFORM_DB_DATABASE: ${PLATFORM_DB_DATABASE:-safmctl_platform}
+      PLATFORM_DB_USERNAME: ${PLATFORM_DB_USERNAME:-safmctl}
+      PLATFORM_DB_PASSWORD: ${PLATFORM_DB_PASSWORD:?set PLATFORM_DB_PASSWORD in .env}
+
       PLATFORM_ADMIN_DB_USERNAME: root
       PLATFORM_ADMIN_DB_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
 

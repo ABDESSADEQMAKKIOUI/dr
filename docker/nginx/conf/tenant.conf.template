@@ -42,6 +42,12 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
+    # Unconditional here, unlike the apex and admin blocks: this template is
+    # rendered ONLY for a tenant that already has an issued certificate, so the
+    # "HSTS on a self-signed host locks browsers out" hazard cannot apply.
+    # includeSubDomains is still omitted — a tenant host has no subdomains.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
     access_log /dev/stdout main;
     error_log  /dev/stderr warn;
 

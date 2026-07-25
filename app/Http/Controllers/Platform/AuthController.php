@@ -32,7 +32,23 @@ class AuthController extends Controller
         // authenticate, even with the correct password.
         $attempt = $credentials + ['is_active' => 1];
 
-        if (! Auth::guard('platform')->attempt($attempt, $request->boolean('remember'))) {
+        // Remember-me is deliberately NOT honoured here. Laravel's recaller is a
+        // 400-day credential that bypasses this form entirely — including its
+        // rate limit — so a single stolen cookie would grant a year of access to
+        // a console that can DROP every customer database. Operators log in.
+        if (! Auth::guard('platform')->attempt($attempt)) {
+            // Record the failure. Without this a brute-force attempt against a
+            // publicly reachable console leaves no trace anywhere: the throttle
+            // silently absorbs it and nobody ever finds out it happened.
+            //
+            // The email is stored as supplied so the audit trail shows what was
+            // tried; the password is never touched.
+            $audit->log('operator.login_failed', null, null, [
+                'email' => $credentials['email'],
+                'ip' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 255),
+            ], 'Échec de connexion : '.$credentials['email']);
+
             return back()
                 ->withErrors(['email' => __('auth.failed')])
                 ->onlyInput('email');

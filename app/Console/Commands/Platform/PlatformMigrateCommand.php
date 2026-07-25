@@ -26,7 +26,7 @@ class PlatformMigrateCommand extends Command
     public function handle(): int
     {
         $options = [
-            '--database' => config('tenancy.platform_connection'),
+            '--database' => config('tenancy.platform_admin_connection'),
             '--path' => 'database/migrations/platform',
             '--force' => true,
             '--no-interaction' => true,

@@ -9,8 +9,10 @@ use InvalidArgumentException;
 /**
  * Owns raw schema DDL for tenant databases.
  *
- * EVERY method runs on the platform connection (config('tenancy.platform_connection'),
- * i.e. 'platform'), never on 'mysql'. The 'mysql' entry is the tenant connection whose
+ * EVERY method runs on the ELEVATED connection
+ * (config('tenancy.platform_admin_connection'), i.e. 'platform_admin'), never on
+ * 'mysql' and never on 'platform'. Those two hold DML only by design.
+ * The 'mysql' entry is the tenant connection whose
  * `database` key is rewritten per request and which, between swaps, points at the
  * deliberately non-existent sentinel schema — it has no usable PDO at the moment
  * CREATE DATABASE / DROP DATABASE has to be issued.
@@ -145,12 +147,16 @@ final class TenantDatabaseManager
     }
 
     /**
-     * The platform connection — the only one guaranteed to have a live PDO while a
+     * The ELEVATED connection. DDL is the one thing the ordinary control-plane and
+     * ERP users deliberately cannot do: both hold DML only, so an SQL injection in
+     * either cannot create or destroy a schema. Root lives here and nowhere else.
+     *
+     * Previously the platform connection — the only one guaranteed to have a live PDO while a
      * tenant schema is being created, migrated or dropped.
      */
     private function connection(): \Illuminate\Database\Connection
     {
-        return DB::connection((string) config('tenancy.platform_connection', 'platform'));
+        return DB::connection((string) config('tenancy.platform_admin_connection', 'platform_admin'));
     }
 
     private function isValidIdentifier(string $database): bool

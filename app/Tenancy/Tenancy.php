@@ -38,6 +38,13 @@ final class Tenancy
         //     Facade::$resolvedInstance. DB::purge() does not touch that cache.
         Facade::clearResolvedInstance('db.schema');
         Facade::clearResolvedInstance('db.connection');
+
+        // Keep the elevated migration connection aimed at the same schema. It is
+        // only ever used by `migrate --database=tenant_admin`, because the ERP
+        // user holds DML only and cannot CREATE/ALTER/DROP a table. Pointing it
+        // here means the provisioner never has to hand a schema name around.
+        config(['database.connections.tenant_admin.database' => $database]);
+        DB::purge('tenant_admin');
     }
 
     public static function forget(): void

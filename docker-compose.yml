@@ -37,11 +37,15 @@ services:
       MYSQL_USER: ${DB_USERNAME:-safm}
       MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+      # Consumed by docker/mysql/init/10-safm-grants.sh to create the
+      # control-plane identity alongside the ERP one.
+      PLATFORM_DB_USERNAME: ${PLATFORM_DB_USERNAME:-safmctl}
+      PLATFORM_DB_PASSWORD: ${PLATFORM_DB_PASSWORD:-ctlsecret}
     volumes:
       - db_data:/var/lib/mysql
-      # Runs once on first init. Grants the app user the safm_ namespace so it
-      # can reach safm_platform and every tenant schema WITHOUT being root —
-      # CREATE DATABASE stays root-only, on a separate connection.
+      # Runs once on first init. Creates the three-identity privilege split:
+      # the ERP user (DML on safm\_%), the control-plane user (DML on
+      # safmctl\_%), and root for DDL only.
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # --silent so a failed ping does not spam the container log.
@@ -88,9 +92,9 @@ services:
       DB_DATABASE: ${DB_DATABASE:-safm}
       DB_USERNAME: ${DB_USERNAME:-safm}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
-      # Only read when TENANCY_ENABLED=true, where the app connects as root
-      # because the provisioner issues CREATE DATABASE and DROP DATABASE. The
-      # entrypoint refuses to boot in SaaS mode without it.
+      # Only read when TENANCY_ENABLED=true. Root is used ONLY by the
+      # platform_admin / tenant_admin connections, for CREATE DATABASE, DROP
+      # DATABASE and migrations — never to serve a request.
       DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
 
       # ── Multi-tenancy ───────────────────────────────────────────────────────
@@ -108,7 +112,9 @@ services:
       # SQLSTATE[HY000][1049] instead of quietly reading someone else's data.
       # Never point MYSQL_DATABASE at this name.
       TENANCY_SENTINEL_DATABASE: safm_unassigned
-      PLATFORM_DB_DATABASE: safm_platform
+      # safmctl_, deliberately OUTSIDE the safm_ namespace the ERP user is
+      # granted, so an SQLi in the ERP cannot reach operators or billing.
+      PLATFORM_DB_DATABASE: ${PLATFORM_DB_DATABASE:-safmctl_platform}
 
       # TLS issuance is driven by the certbot service, which only exists in the
       # production overlay. "off" here means TenantProvisioner step 14 logs and

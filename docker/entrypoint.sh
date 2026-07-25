@@ -66,7 +66,7 @@ TENANCY_ROOT_DOMAIN="${TENANCY_ROOT_DOMAIN:-facturation.cfpss.ma}"
 TENANCY_ADMIN_DOMAIN="${TENANCY_ADMIN_DOMAIN:-admin.${TENANCY_ROOT_DOMAIN}}"
 TENANCY_DB_PREFIX="${TENANCY_DB_PREFIX:-safm_}"
 SENTINEL_DATABASE="${TENANCY_SENTINEL_DATABASE:-safm_unassigned}"
-PLATFORM_DB_DATABASE="${PLATFORM_DB_DATABASE:-safm_platform}"
+PLATFORM_DB_DATABASE="${PLATFORM_DB_DATABASE:-safmctl_platform}"
 
 if [ "$TENANCY_ENABLED" = "true" ]; then
     [ -n "${DB_ROOT_PASSWORD:-}" ] \
@@ -77,6 +77,13 @@ if [ "$TENANCY_ENABLED" = "true" ]; then
     EFFECTIVE_DB_PASSWORD="${DB_PASSWORD:-secret}"
 
     # The elevated identity, used only by TenantDatabaseManager.
+    # The control plane has its OWN MySQL identity, with no grant on any
+    # tenant schema, so an SQL injection in the ERP cannot reach operator
+    # password hashes or subscriptions.
+    PLATFORM_DB_USERNAME="${PLATFORM_DB_USERNAME:-safmctl}"
+    PLATFORM_DB_PASSWORD="${PLATFORM_DB_PASSWORD:-$DB_PASSWORD}"
+    export PLATFORM_DB_USERNAME PLATFORM_DB_PASSWORD
+
     PLATFORM_ADMIN_DB_USERNAME="${PLATFORM_ADMIN_DB_USERNAME:-root}"
     PLATFORM_ADMIN_DB_PASSWORD="${PLATFORM_ADMIN_DB_PASSWORD:-$DB_ROOT_PASSWORD}"
     export PLATFORM_ADMIN_DB_USERNAME PLATFORM_ADMIN_DB_PASSWORD
@@ -449,6 +456,38 @@ Drop it (DROP DATABASE \`${SENTINEL_DATABASE}\`) or point TENANCY_SENTINEL_DATAB
 that is never created. While it exists, a request that fails to resolve its tenant reads an \
 empty schema instead of failing loudly."
     fi
+
+    # The control-plane schema has to be created with root. Neither the ERP user
+    # nor the control-plane user holds CREATE on it, by design — that is exactly
+    # what stops an SQL injection in the ERP from reaching operators and billing.
+    #
+    # Laravel 11's `migrate` will silently create a missing MySQL database if the
+    # connection's user happens to have the grant. Relying on that is what hid
+    # this dependency before; doing it explicitly here keeps the grants tight.
+    ensure_platform_schema() {
+        PLATFORM_DB_DATABASE="$PLATFORM_DB_DATABASE" \
+        DB_HOST="${DB_HOST:-db}" DB_PORT="${DB_PORT:-3306}" \
+        ADMIN_USER="$PLATFORM_ADMIN_DB_USERNAME" ADMIN_PASS="$PLATFORM_ADMIN_DB_PASSWORD" \
+        php -r '
+            $db = getenv("PLATFORM_DB_DATABASE");
+            if (!preg_match("/^[A-Za-z0-9_]{1,64}$/", $db)) {
+                fwrite(STDERR, "refusing an implausible platform schema name: {$db}\n");
+                exit(1);
+            }
+            $dsn = sprintf("mysql:host=%s;port=%s", getenv("DB_HOST"), getenv("DB_PORT"));
+            try {
+                $pdo = new PDO($dsn, getenv("ADMIN_USER"), getenv("ADMIN_PASS"));
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$db}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                exit(0);
+            } catch (Throwable $e) {
+                fwrite(STDERR, $e->getMessage() . "\n");
+                exit(1);
+            }
+        ' || die "could not create the control-plane schema ${PLATFORM_DB_DATABASE}"
+    }
+
+    ensure_platform_schema
 
     if platform_is_installed; then
         log "platform schema present — applying pending platform migrations"
