@@ -355,11 +355,16 @@ database_exists() {
 # Returns 0 when every table named in $1 (comma-separated) exists in schema $2
 # and is non-empty. State is read from the database rather than a marker file so
 # that wiping the db volume alone re-triggers a seed.
+#
+# $3/$4 override the probing identity, and matter since the privilege split: the
+# ERP user is denied on the control-plane schema BY DESIGN, so probing it with
+# the default identity always answers "not populated" and the caller re-runs the
+# installer on every boot.
 tables_are_populated() {
     TABLES="$1" \
     PROBE_SCHEMA="$2" \
-    PROBE_USER="$EFFECTIVE_DB_USERNAME" \
-    PROBE_PASS="$EFFECTIVE_DB_PASSWORD" php -r '
+    PROBE_USER="${3:-$EFFECTIVE_DB_USERNAME}" \
+    PROBE_PASS="${4:-$EFFECTIVE_DB_PASSWORD}" php -r '
         $dsn = sprintf("mysql:host=%s;port=%s;dbname=%s",
             getenv("DB_HOST") ?: "db",
             getenv("DB_PORT") ?: "3306",
@@ -408,7 +413,7 @@ demo_is_seeded() {
 # on every boot would rewrite that operator's password from a value nobody kept.
 # So install once, and from then on apply schema changes only.
 platform_is_installed() {
-    tables_are_populated 'platform_users,plans' "$PLATFORM_DB_DATABASE"
+    tables_are_populated 'platform_users,plans' "$PLATFORM_DB_DATABASE"         "$PLATFORM_DB_USERNAME" "$PLATFORM_DB_PASSWORD"
 }
 
 # ──────────────────────────────────────────────────────────────────────────────

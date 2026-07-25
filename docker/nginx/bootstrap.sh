@@ -121,6 +121,17 @@ ensure_placeholder() {
     SELF_CERT="${SELF_DIR}/selfsigned.crt"
     SELF_KEY="${SELF_DIR}/selfsigned.key"
 
+    # Regenerate when the file is missing OR when it predates the wildcard SAN.
+    # An upgraded deployment reuses the nginx_ssl volume, and the placeholder an
+    # older bootstrap wrote carries only a CN. Browsers ignore CN entirely, so
+    # that stale cert turns the intended soft "untrusted issuer" warning into a
+    # hard ERR_CERT_COMMON_NAME_INVALID on the admin console and on every tenant
+    # awaiting issuance.
+    if [ -s "$SELF_CERT" ] && ! openssl x509 -in "$SELF_CERT" -noout -ext subjectAltName 2>/dev/null | grep -q "DNS:\*\.${ROOT_DOMAIN}"; then
+        log "placeholder certificate lacks the *.${ROOT_DOMAIN} SAN — regenerating"
+        rm -f "$SELF_CERT" "$SELF_KEY"
+    fi
+
     if [ ! -s "$SELF_CERT" ] || [ ! -s "$SELF_KEY" ]; then
         log "generating the self-signed placeholder certificate"
         mkdir -p "$SELF_DIR"
