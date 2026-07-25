@@ -44,7 +44,10 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "${APP_PORT:-8088}:80"
+      # Bound to loopback by default so that adding the production overlay (which
+      # puts nginx on 80/443) never accidentally exposes Apache to the internet.
+      # Set APP_BIND=0.0.0.0 to reach the local demo from another machine.
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8088}:80"
     environment:
       APP_NAME: SAFM Demo
       APP_ENV: production

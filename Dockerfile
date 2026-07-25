@@ -102,8 +102,10 @@ RUN set -eux; \
     printf '[client]\nssl=0\n\n[mysqldump]\nno-tablespaces\n' \
         > /etc/mysql/conf.d/99-safm-client.cnf
 
+# remoteip: restores the real client IP from X-Forwarded-For when running behind
+# the nginx edge (see docker/apache/vhost.conf).
 RUN set -eux; \
-    a2enmod rewrite headers expires; \
+    a2enmod rewrite headers expires remoteip; \
     printf 'ServerName localhost\n' > /etc/apache2/conf-available/servername.conf; \
     a2enconf servername
 

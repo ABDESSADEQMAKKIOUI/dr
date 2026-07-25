@@ -1,0 +1,92 @@
+# Production overlay for the public demo at facturation.cfpss.ma.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Layered on top of docker-compose.yml, this:
+#   - puts nginx in front, owning ports 80 and 443
+#   - stops publishing the app container to the internet (127.0.0.1 only)
+#   - points APP_URL at the real https origin
+#   - adds certbot for issuance and renewal
+#
+# Copy .env.prod.example to .env and fill it in first — nginx refuses to start
+# without SAFM_AUTH_USER and SAFM_AUTH_PASSWORD.
+
+services:
+  app:
+    # No `ports` here on purpose. Compose merges port lists by appending, so
+    # re-declaring the mapping would try to bind 8088 twice. The base file
+    # already binds it to 127.0.0.1, which is what we want: reachable on the
+    # server for debugging, never from the internet.
+    environment:
+      APP_URL: https://${SAFM_SERVER_NAME:?set SAFM_SERVER_NAME in .env}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_LEVEL: warning
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    image: safm-demo-nginx:latest
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SAFM_SERVER_NAME: ${SAFM_SERVER_NAME:?set SAFM_SERVER_NAME in .env}
+      SAFM_UPSTREAM: app:80
+      SAFM_AUTH_USER: ${SAFM_AUTH_USER:?set SAFM_AUTH_USER in .env}
+      SAFM_AUTH_PASSWORD: ${SAFM_AUTH_PASSWORD:?set SAFM_AUTH_PASSWORD in .env}
+      SAFM_AUTH_REALM: ${SAFM_AUTH_REALM:-SAFM Demo}
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+      - nginx_ssl:/etc/nginx/ssl
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # The long-running service is RENEWAL only: it wakes twice a day and renews
+  # anything within 30 days of expiry. nginx picks up the new files on its own
+  # reload timer.
+  #
+  # First issuance is a separate, manual, one-shot command — nginx has to be up
+  # already to answer the HTTP-01 challenge, and Let's Encrypt rate-limits hard,
+  # so it must never run automatically on `up`. Note --entrypoint, which is what
+  # stops it from inheriting the renewal loop below:
+  #
+  #   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  #     run --rm --entrypoint certbot certbot certonly \
+  #       --webroot -w /var/www/certbot \
+  #       -d facturation.cfpss.ma \
+  #       --email you@cfpss.ma --agree-tos --no-eff-email
+  #
+  # Then: docker compose ... restart nginx
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    depends_on:
+      - nginx
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        trap exit TERM
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet
+          sleep 12h & wait $${!}
+        done
+
+volumes:
+  certbot_conf:
+  certbot_www:
+  nginx_ssl:
