@@ -487,6 +487,63 @@ empty schema instead of failing loudly."
         ' || die "could not create the control-plane schema ${PLATFORM_DB_DATABASE}"
     }
 
+    # Reconcile the MySQL identities on EVERY boot, not just on a fresh volume.
+    #
+    # docker/mysql/init/10-safm-grants.sh only ever runs from
+    # /docker-entrypoint-initdb.d/, which the mysql image executes exclusively
+    # when the data directory is empty. Upgrading an EXISTING single-tenant
+    # deployment therefore never gets the three-identity split: safmctl would not
+    # exist and the ERP user would keep its old over-broad grant. This step makes
+    # the upgrade path work, and being idempotent it doubles as a self-healing
+    # backstop if grants ever drift.
+    ensure_grants() {
+        ERP_USER="$EFFECTIVE_DB_USERNAME" \
+        CTL_USER="$PLATFORM_DB_USERNAME" CTL_PASS="$PLATFORM_DB_PASSWORD" \
+        DB_HOST="${DB_HOST:-db}" DB_PORT="${DB_PORT:-3306}" \
+        ADMIN_USER="$PLATFORM_ADMIN_DB_USERNAME" ADMIN_PASS="$PLATFORM_ADMIN_DB_PASSWORD" \
+        php -r '
+            $dml = "SELECT, INSERT, UPDATE, DELETE, EXECUTE, SHOW VIEW, CREATE TEMPORARY TABLES, LOCK TABLES";
+            $erp = getenv("ERP_USER");
+            $ctl = getenv("CTL_USER");
+            foreach ([$erp, $ctl] as $u) {
+                if (!preg_match("/^[A-Za-z0-9_]{1,32}$/", $u)) {
+                    fwrite(STDERR, "implausible mysql username: {$u}\n");
+                    exit(1);
+                }
+            }
+            $dsn = sprintf("mysql:host=%s;port=%s", getenv("DB_HOST"), getenv("DB_PORT"));
+            try {
+                $pdo = new PDO($dsn, getenv("ADMIN_USER"), getenv("ADMIN_PASS"));
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                // Revoke the old over-broad grant if an earlier deployment left
+                // it behind: ALL PRIVILEGES on `safm\_%` also matched the control
+                // plane and permitted CREATE/DROP DATABASE.
+                try {
+                    $pdo->exec("REVOKE ALL PRIVILEGES ON `safm\_%`.* FROM `{$erp}`@`%`");
+                } catch (Throwable $e) {
+                    // No such grant yet - fine, this is the fresh-volume path.
+                }
+
+                $pdo->exec("GRANT {$dml} ON `safm\_%`.* TO `{$erp}`@`%`");
+
+                $pass = $pdo->quote(getenv("CTL_PASS"));
+                $pdo->exec("CREATE USER IF NOT EXISTS `{$ctl}`@`%` IDENTIFIED BY {$pass}");
+                $pdo->exec("ALTER USER `{$ctl}`@`%` IDENTIFIED BY {$pass}");
+                $pdo->exec("GRANT {$dml} ON `safmctl\_%`.* TO `{$ctl}`@`%`");
+
+                $pdo->exec("FLUSH PRIVILEGES");
+                exit(0);
+            } catch (Throwable $e) {
+                fwrite(STDERR, $e->getMessage() . "\n");
+                exit(1);
+            }
+        ' || die "could not reconcile MySQL grants"
+
+        log "MySQL identities reconciled (${EFFECTIVE_DB_USERNAME} = ERP DML, ${PLATFORM_DB_USERNAME} = control plane DML, root = DDL)"
+    }
+
+    ensure_grants
     ensure_platform_schema
 
     if platform_is_installed; then
