@@ -1,0 +1,67 @@
+# Per-tenant HTTPS vhost.
+#
+# Rendered by bootstrap.sh into /etc/nginx/conf.d/tenant-<host>.conf, ONCE PER
+# DIRECTORY under /etc/letsencrypt/live/ that belongs to a tenant subdomain.
+# The __PLACEHOLDER__ tokens are replaced with sed (never envsubst — nginx's own
+# $host / $remote_addr / $proxy_add_x_forwarded_for must survive untouched).
+#
+# WHY ONE SERVER BLOCK PER TENANT INSTEAD OF ONE WILDCARD BLOCK.
+# ssl_certificate is resolved when the configuration is loaded; it cannot take a
+# runtime variable such as $ssl_server_name without the lua/njs module. SNI
+# therefore needs a distinct server block per certificate, and this file is that
+# block. Tenants that have no certificate yet are NOT rendered here — they fall
+# through to the `*.<root>` wildcard block in safm.conf.template, which serves
+# the self-signed placeholder. A tenant is fully usable on that fallback, with a
+# browser warning, which is exactly why a failed issuance never fails a provision.
+#
+# There is deliberately NO `listen 80` block here. Port 80 is owned by a single
+# default_server in safm.conf.template that answers /.well-known/acme-challenge/
+# for every host and redirects everything else — that block is what makes HTTP-01
+# work for a brand new tenant that has no vhost of its own yet.
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name __TENANT_HOST__;
+
+    ssl_certificate     __TENANT_SSL_CERT__;
+    ssl_certificate_key __TENANT_SSL_KEY__;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # The ERP imports product CSVs and accepts logo/attachment uploads.
+    # Keep this at least as large as php.ini's post_max_size (40M).
+    client_max_body_size 40m;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    access_log /dev/stdout main;
+    error_log  /dev/stderr warn;
+
+    # Renewals are answered over port 80, but keep this here so a redirect loop
+    # or an http->https quirk can never lock certbot out of an existing tenant.
+    location ^~ /.well-known/acme-challenge/ {
+        auth_basic off;
+        root /var/www/certbot;
+        default_type "text/plain";
+    }
+
+    location / {
+        # A PAYING CUSTOMER MUST NOT NEED THE SHARED DEMO PASSWORD.
+        # __TENANT_AUTH__ is `off` unless SAFM_TENANT_BASIC_AUTH=true, which is
+        # only for a staging domain where the tenant subdomains must stay
+        # private too. The apex and admin.<root> are gated unconditionally.
+        auth_basic           __TENANT_AUTH__;
+        auth_basic_user_file /etc/nginx/safm.htpasswd;
+
+        proxy_pass http://__UPSTREAM__;
+        include /etc/nginx/safm-proxy.conf;
+    }
+}

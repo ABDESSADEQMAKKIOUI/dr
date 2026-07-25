@@ -1,6 +1,11 @@
 # syntax=docker/dockerfile:1
 #
-# SAFM — Docker image for the demo deployment.
+# SAFM — Docker image for the demo and SaaS deployments.
+#
+# One image, two modes, selected at runtime by TENANCY_ENABLED (see
+# docker/entrypoint.sh): the single-tenant demo, or the multi-tenant platform
+# with a schema per customer. Nothing here is mode-specific except the
+# healthcheck's Host header.
 #
 # Apache + mod_php in a single container, matching the Apache/.htaccess setup the
 # project already ships with (public/.htaccess is the stock Laravel front controller).
@@ -158,6 +163,13 @@ COPY --from=vendor --chown=www-data:www-data /var/www/html /var/www/html
 
 COPY --chmod=0755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
+# TenantProvisioner step 14 shells out to base_path('docker/certbot/issue-tenant-cert.sh').
+# The file arrives via `COPY . .` in the vendor stage, and a Windows checkout
+# carries no executable bit, so set it explicitly rather than relying on the
+# build context's permissions. The app container has no certbot binary — the
+# script detects that and queues the request for the certbot service instead.
+RUN chmod 0755 docker/certbot/issue-tenant-cert.sh
+
 # Files that must never reach a running demo.
 #
 # run_setup.php sits under public/, so it bypasses Laravel routing and the
@@ -206,9 +218,25 @@ EXPOSE 80
 #   --max-redirs 0      makes the 302 -> /install of a half-provisioned app fail,
 #                       which plain `curl -f` would let through
 # start-period covers the first-boot migrate + seed.
+#
+# THE HOST HEADER IS MANDATORY IN SAAS MODE. `curl http://127.0.0.1/login` sends
+# `Host: 127.0.0.1`, and ResolveTenant 404s any host that is not the admin
+# domain or *.<root_domain> — so an unqualified probe would report every healthy
+# SaaS container as unhealthy, and docker-compose.prod.yml gates nginx on
+# `condition: service_healthy`, so the whole edge would never start.
+# admin.<root> is the right host to probe: routes/platform.php declares /login
+# there, and reaching it exercises the platform connection.
+#
+# The host is read from a file the entrypoint writes AFTER it has resolved the
+# mode, rather than from the environment: TENANCY_ADMIN_DOMAIN is normally left
+# empty in compose and derived from TENANCY_ROOT_DOMAIN, so `${VAR:-default}`
+# here would silently probe the wrong host. In legacy mode the file holds
+# `localhost` and the behaviour is exactly what it was before.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=180s --retries=10 \
     CMD test -f /var/www/html/storage/app/.installed \
-     && curl -fsS --max-redirs 0 -o /dev/null http://127.0.0.1/login || exit 1
+     && curl -fsS --max-redirs 0 -o /dev/null \
+          -H "Host: $(cat /var/www/html/storage/app/.healthhost 2>/dev/null || echo localhost)" \
+          http://127.0.0.1/login || exit 1
 
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["apache2-foreground"]

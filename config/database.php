@@ -62,6 +62,71 @@ return [
             ]) : [],
         ],
 
+        // -------------------------------------------------------------------
+        // PLATFORM CONNECTIONS (SaaS multi-tenancy). Additive only. The ERP's
+        // own 'mysql' connection above is the per-request tenant connection
+        // whose `database` key is rewritten at runtime by App\Tenancy\Tenancy;
+        // it keeps using the limited application DB user. Do not touch it.
+        // -------------------------------------------------------------------
+
+        // Read-only, fixed-schema connection to the central platform database
+        // (tenants, plans, subscriptions, operators, audit logs). Runs as the
+        // ordinary application user.
+        'platform' => [
+            'driver' => 'mysql',
+            'url' => env('PLATFORM_DB_URL'),
+            'host' => env('PLATFORM_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('PLATFORM_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('PLATFORM_DB_DATABASE', 'safm_platform'),
+            'username' => env('PLATFORM_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('PLATFORM_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        // PRIVILEGE-ISOLATION CONNECTION. Deliberately kept separate from
+        // 'platform' and from 'mysql'. This is the ONLY connection allowed to
+        // run CREATE DATABASE / DROP DATABASE / GRANT during tenant
+        // provisioning (App\Services\Tenancy\TenantDatabaseManager), and it
+        // reads its OWN high-privilege credentials (PLATFORM_ADMIN_DB_*),
+        // falling back to the platform ones only when those are unset.
+        //
+        // WHY THIS EXISTS - DO NOT "SIMPLIFY" IT AWAY: running the whole ERP as
+        // a MySQL super-user so that provisioning can create schemas turns any
+        // SQL injection anywhere in the ERP into server-wide (root) access.
+        // Instead, the ERP ('mysql') and the platform reads ('platform') use a
+        // limited application user, and only this admin connection - used for
+        // nothing but DDL/GRANT in the provisioner - carries the elevated
+        // grant. 'database' is null: it never selects a schema, it creates and
+        // drops them by name.
+        'platform_admin' => [
+            'driver' => 'mysql',
+            'url' => env('PLATFORM_ADMIN_DB_URL', env('PLATFORM_DB_URL')),
+            'host' => env('PLATFORM_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('PLATFORM_DB_PORT', env('DB_PORT', '3306')),
+            'database' => null,
+            'username' => env('PLATFORM_ADMIN_DB_USERNAME', env('PLATFORM_DB_USERNAME', env('DB_USERNAME', 'root'))),
+            'password' => env('PLATFORM_ADMIN_DB_PASSWORD', env('PLATFORM_DB_PASSWORD', env('DB_PASSWORD', ''))),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

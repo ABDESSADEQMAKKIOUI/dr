@@ -1,16 +1,30 @@
 # Rendered to /etc/nginx/conf.d/default.conf by bootstrap.sh, which replaces the
 # __PLACEHOLDER__ tokens with sed. Plain sed rather than envsubst so that nginx's
 # own $variables can never be eaten by the substitution.
+#
+# FIVE server blocks, in the order nginx resolves them for a given Host:
+#
+#   1. port 80, default_server        every host: ACME challenge, then -> https
+#   2. apex        __SERVER_NAME__    the marketing/root host (basic auth)
+#   3. admin       __ADMIN_SERVER_NAME__  the operator console (basic auth, always)
+#   4. wildcard    *.__ROOT_DOMAIN__  tenants with no certificate yet
+#                                     (self-signed placeholder, NO basic auth)
+#   5. port 443, default_server       anything else -> 404
+#
+# Tenants that DO have a certificate get their own exact-match server block from
+# conf/tenant.conf.template, rendered into conf.d/tenant-<host>.conf. nginx
+# matches an exact server_name before a leading wildcard before default_server,
+# so those blocks win over (4) automatically and (4) is purely the fallback.
 
-# ── Port 80 ───────────────────────────────────────────────────────────────────
-# Serves the ACME challenge and redirects everything else to HTTPS.
+# ── Port 80 — one block for every host on the box ─────────────────────────────
+# This is the block that makes per-tenant HTTP-01 issuance possible: a brand new
+# tenant has no vhost of its own, so its challenge has to be answered by the
+# default_server. It must stay above every redirect and outside basic auth.
 server {
-    listen 80;
-    listen [::]:80;
-    server_name __SERVER_NAME__;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
 
-    # Must stay above the redirect and outside basic auth, or certbot's HTTP-01
-    # challenge can never be answered.
     location ^~ /.well-known/acme-challenge/ {
         auth_basic off;
         root /var/www/certbot;
@@ -22,7 +36,7 @@ server {
     }
 }
 
-# ── Port 443 ──────────────────────────────────────────────────────────────────
+# ── Apex — __SERVER_NAME__ ────────────────────────────────────────────────────
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
@@ -38,12 +52,8 @@ server {
     ssl_session_timeout 1d;
     ssl_session_tickets off;
 
-    # The ERP imports product CSVs and accepts logo/attachment uploads.
-    # Keep this at least as large as php.ini's post_max_size (40M).
     client_max_body_size 40m;
 
-    # This is a locked-down demo, not a public site: keep it out of search
-    # results even if someone shares the URL.
     add_header X-Robots-Tag "noindex, nofollow" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -52,8 +62,66 @@ server {
     access_log /dev/stdout main;
     error_log  /dev/stderr warn;
 
-    # Renewals are answered over port 80, but keep this here so a redirect
-    # loop or an http->https quirk can never lock certbot out.
+    location ^~ /.well-known/acme-challenge/ {
+        auth_basic off;
+        root /var/www/certbot;
+        default_type "text/plain";
+    }
+
+    # config/filesystems.php:44 builds the public disk URL as env('APP_URL') .
+    # '/storage', and APP_URL can only ever name ONE host — the apex. So a
+    # tenant page rendering an uploaded employee photo or expense attachment
+    # (Storage::url(), four call sites) points the browser at
+    # https://<apex>/storage/... . With the apex behind basic auth those four
+    # images 401. __APEX_STORAGE_AUTH__ is `off` when SAFM_PUBLIC_STORAGE=true,
+    # which is what the production overlay sets. Uploaded public-disk files are
+    # not credentials; the ERP itself stays gated.
+    location ^~ /storage/ {
+        auth_basic           __APEX_STORAGE_AUTH__;
+        auth_basic_user_file /etc/nginx/safm.htpasswd;
+
+        proxy_pass http://__UPSTREAM__;
+        include /etc/nginx/safm-proxy.conf;
+    }
+
+    location / {
+        auth_basic           __AUTH_REALM__;
+        auth_basic_user_file /etc/nginx/safm.htpasswd;
+
+        proxy_pass http://__UPSTREAM__;
+        include /etc/nginx/safm-proxy.conf;
+    }
+}
+
+# ── Operator console — __ADMIN_SERVER_NAME__ ──────────────────────────────────
+# Basic auth here is NOT configurable. This host serves routes/platform.php:
+# tenant provisioning, tenant destruction, plans and the audit log. It gets a
+# second lock in front of the platform guard, always.
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name __ADMIN_SERVER_NAME__;
+
+    ssl_certificate     __ADMIN_SSL_CERT__;
+    ssl_certificate_key __ADMIN_SSL_KEY__;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    client_max_body_size 40m;
+
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    access_log /dev/stdout main;
+    error_log  /dev/stderr warn;
+
     location ^~ /.well-known/acme-challenge/ {
         auth_basic off;
         root /var/www/certbot;
@@ -61,27 +129,78 @@ server {
     }
 
     location / {
-        auth_basic           "__AUTH_REALM__";
+        auth_basic           __AUTH_REALM__;
         auth_basic_user_file /etc/nginx/safm.htpasswd;
 
         proxy_pass http://__UPSTREAM__;
-        proxy_http_version 1.1;
-
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        # The app's Apache vhost turns this into HTTPS=on, which is what makes
-        # Laravel generate https:// URLs without any application source change.
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host  $host;
-        proxy_set_header X-Forwarded-Port  $server_port;
-
-        # Reports and CSV exports can be slow on a cold cache.
-        proxy_connect_timeout 10s;
-        proxy_send_timeout    120s;
-        proxy_read_timeout    120s;
-
-        proxy_buffering off;
-        proxy_redirect off;
+        include /etc/nginx/safm-proxy.conf;
     }
+}
+
+# ── Tenant fallback — *.__ROOT_DOMAIN__ ───────────────────────────────────────
+# Serves the SELF-SIGNED placeholder, so a tenant is usable the second it is
+# provisioned, before certbot has answered. Once conf.d/tenant-<host>.conf
+# exists for that host, this block stops seeing it.
+#
+# No basic auth by default: this is where real customers land.
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name *.__ROOT_DOMAIN__;
+
+    ssl_certificate     __FALLBACK_SSL_CERT__;
+    ssl_certificate_key __FALLBACK_SSL_KEY__;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    client_max_body_size 40m;
+
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    access_log /dev/stdout main;
+    error_log  /dev/stderr warn;
+
+    location ^~ /.well-known/acme-challenge/ {
+        auth_basic off;
+        root /var/www/certbot;
+        default_type "text/plain";
+    }
+
+    location / {
+        auth_basic           __TENANT_AUTH__;
+        auth_basic_user_file /etc/nginx/safm.htpasswd;
+
+        proxy_pass http://__UPSTREAM__;
+        include /etc/nginx/safm-proxy.conf;
+    }
+}
+
+# ── Everything else ───────────────────────────────────────────────────────────
+# An IP-address request, a stale DNS name, a scanner probing Host: localhost.
+# Without this block nginx would hand those to the FIRST 443 server block (the
+# apex), which would proxy them into Laravel with an unroutable Host. A 404 at
+# the edge keeps them out of PHP entirely.
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    http2 on;
+    server_name _;
+
+    ssl_certificate     __FALLBACK_SSL_CERT__;
+    ssl_certificate_key __FALLBACK_SSL_KEY__;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_tickets off;
+
+    access_log off;
+
+    return 404;
 }

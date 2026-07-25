@@ -40,6 +40,15 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Operator console guard (admin.<root_domain>). Uses its own session
+        // cookie and file path, set by App\Http\Middleware\UsePlatformConnection
+        // before StartSession, so operator sessions never collide with the ERP
+        // 'web' guard on a tenant subdomain. 'defaults.guard' stays 'web'.
+        'platform' => [
+            'driver' => 'session',
+            'provider' => 'platform_operators',
+        ],
     ],
 
     /*
@@ -69,6 +78,14 @@ return [
         //     'driver' => 'database',
         //     'table' => 'users',
         // ],
+
+        // Platform operators live in safm_platform.platform_users. The model is
+        // pinned to the 'platform' connection, so this provider always resolves
+        // against the platform database regardless of the swapped tenant default.
+        'platform_operators' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Platform\PlatformUser::class,
+        ],
     ],
 
     /*
@@ -94,6 +111,17 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // Reset broker for platform operators. Tokens live in the platform
+        // database (safm_platform.platform_password_reset_tokens); the reset
+        // controllers must run the broker on the 'platform' connection.
+        'platform_operators' => [
+            'provider' => 'platform_operators',
+            'connection' => 'platform',
+            'table' => 'platform_password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

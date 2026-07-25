@@ -1,13 +1,22 @@
-# SAFM — demo stack.
+# SAFM — base stack.
+#
+# ON ITS OWN this is the single-tenant demo, unchanged:
 #
 #   docker compose up -d --build
 #   → http://localhost:8088/login   admin@admin.com / password
 #
 # Override the published port with APP_PORT, e.g. `APP_PORT=9000 docker compose up -d`.
 #
-# Two services only. No Redis (the app never needs it, and CacheService's Redis
-# calls are reachable from exactly one admin page), no queue worker and no
-# scheduler (QUEUE_CONNECTION is sync because this repo has no jobs table).
+# WITH docker-compose.prod.yml it becomes the multi-tenant SaaS platform: nginx
+# on 80/443 serving the apex, admin.<root> and a vhost per tenant subdomain, a
+# platform schema, and one ERP schema per customer. That overlay is what flips
+# TENANCY_ENABLED to true; everything below stays valid in both modes.
+#
+# Two services only in the base file. No Redis (the app never needs it, and
+# CacheService's Redis calls are reachable from exactly one admin page), no
+# queue worker and no scheduler (QUEUE_CONNECTION is sync because this repo has
+# no jobs table — and see the Octane/queue-worker risk: a persistent worker
+# would inherit the previous job's tenant connection).
 
 name: safm-demo
 
@@ -19,12 +28,21 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     environment:
+      # In SaaS mode this schema is NOT what the app connects to — the app uses
+      # a sentinel that must not exist, and every real schema is created by the
+      # provisioner. It is still created here so that flipping TENANCY_ENABLED
+      # back to false gives a working single-tenant instance, and so that the
+      # `safm` user has something to own.
       MYSQL_DATABASE: ${DB_DATABASE:-safm}
       MYSQL_USER: ${DB_USERNAME:-safm}
       MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
     volumes:
       - db_data:/var/lib/mysql
+      # Runs once on first init. Grants the app user the safm_ namespace so it
+      # can reach safm_platform and every tenant schema WITHOUT being root —
+      # CREATE DATABASE stays root-only, on a separate connection.
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # --silent so a failed ping does not spam the container log.
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
@@ -70,9 +88,36 @@ services:
       DB_DATABASE: ${DB_DATABASE:-safm}
       DB_USERNAME: ${DB_USERNAME:-safm}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
+      # Only read when TENANCY_ENABLED=true, where the app connects as root
+      # because the provisioner issues CREATE DATABASE and DROP DATABASE. The
+      # entrypoint refuses to boot in SaaS mode without it.
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
 
-      # Set to "false" to get an empty instance with only roles, permissions,
-      # settings and the admin account.
+      # ── Multi-tenancy ───────────────────────────────────────────────────────
+      # false here so that plain `docker compose up -d` still gives the working
+      # single-tenant demo documented above. docker-compose.prod.yml sets it to
+      # true. Every value below is inert while it is false.
+      TENANCY_ENABLED: ${TENANCY_ENABLED:-false}
+      TENANCY_ROOT_DOMAIN: ${SAFM_SERVER_NAME:-facturation.cfpss.ma}
+      # Left empty on purpose: the entrypoint derives admin.<root domain> from
+      # the line above. Set SAFM_ADMIN_SERVER_NAME in .env only to override it.
+      TENANCY_ADMIN_DOMAIN: ${SAFM_ADMIN_SERVER_NAME:-}
+      TENANCY_DB_PREFIX: safm_
+      # A schema that MUST NOT EXIST. It is what DB_DATABASE points at, so a
+      # request that reaches the database without resolving its tenant dies with
+      # SQLSTATE[HY000][1049] instead of quietly reading someone else's data.
+      # Never point MYSQL_DATABASE at this name.
+      TENANCY_SENTINEL_DATABASE: safm_unassigned
+      PLATFORM_DB_DATABASE: safm_platform
+
+      # TLS issuance is driven by the certbot service, which only exists in the
+      # production overlay. "off" here means TenantProvisioner step 14 logs and
+      # moves on instead of queueing requests nobody will ever drain.
+      SAFM_CERT_ISSUANCE: ${SAFM_CERT_ISSUANCE:-off}
+
+      # Single-tenant mode only. Set to "false" to get an empty instance with
+      # only roles, permissions, settings and the admin account. In SaaS mode
+      # demo content is a `tenant:provision` decision, not a boot-time one.
       DEMO_SEED: "true"
     volumes:
       # storage/ only. The application code is baked into the image on purpose:

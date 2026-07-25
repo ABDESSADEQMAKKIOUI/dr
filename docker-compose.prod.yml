@@ -1,15 +1,23 @@
-# Production overlay for the public demo at facturation.cfpss.ma.
+# Production overlay — the multi-tenant SaaS platform at facturation.cfpss.ma.
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
 # Layered on top of docker-compose.yml, this:
-#   - puts nginx in front, owning ports 80 and 443
+#   - flips the app into SaaS mode (TENANCY_ENABLED=true): a platform schema
+#     plus one ERP schema per customer, resolved from the request's subdomain
+#   - puts nginx in front, owning ports 80 and 443, serving three host patterns
+#     (apex, admin.<root>, *.<root>) with a certificate per tenant
 #   - stops publishing the app container to the internet (127.0.0.1 only)
 #   - points APP_URL at the real https origin
-#   - adds certbot for issuance and renewal
+#   - adds certbot for per-tenant issuance and for renewal
 #
 # Copy .env.prod.example to .env and fill it in first — nginx refuses to start
-# without SAFM_AUTH_USER and SAFM_AUTH_PASSWORD.
+# without SAFM_AUTH_USER and SAFM_AUTH_PASSWORD, and the app refuses to start in
+# SaaS mode without DB_ROOT_PASSWORD.
+#
+# DNS: a WILDCARD A record (*.facturation.cfpss.ma) must point at this server,
+# alongside the apex. Certificates are issued per subdomain over HTTP-01, so no
+# DNS API credentials are needed anywhere in this stack.
 
 services:
   app:
@@ -22,6 +30,34 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       LOG_LEVEL: warning
+
+      TENANCY_ENABLED: "true"
+      # The app connects as root: provisioning issues CREATE DATABASE and DROP
+      # DATABASE, which the `safm` user has no grant for on *.*.
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+
+      # The elevated identity, reached only through the 'platform_admin'
+      # connection in App\Services\Tenancy\TenantDatabaseManager, and used only
+      # for CREATE DATABASE / DROP DATABASE. The ERP itself connects as the
+      # limited DB_USERNAME above, which docker/mysql/init/10-safm-grants.sh
+      # grants the `safm\_%` namespace and nothing wider.
+      PLATFORM_ADMIN_DB_USERNAME: root
+      PLATFORM_ADMIN_DB_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+
+      # The first operator account for the console at admin.<root>. Leave the
+      # password empty and the entrypoint generates one and prints it ONCE, in
+      # the container log, on first boot only.
+      PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:-}
+      PLATFORM_ADMIN_NAME: ${PLATFORM_ADMIN_NAME:-}
+      PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:-}
+
+      # TenantProvisioner step 14 calls docker/certbot/issue-tenant-cert.sh.
+      # There is no certbot binary in this container, so the script queues the
+      # request in the shared volume below and the certbot service drains it.
+      SAFM_CERT_ISSUANCE: auto
+      SAFM_CERT_REQUEST_DIR: /var/www/certbot-requests
+    volumes:
+      - certbot_requests:/var/www/certbot-requests
 
   nginx:
     build:
@@ -37,10 +73,26 @@ services:
       - "443:443"
     environment:
       SAFM_SERVER_NAME: ${SAFM_SERVER_NAME:?set SAFM_SERVER_NAME in .env}
+      # Both left empty on purpose: bootstrap.sh defaults the root domain to the
+      # apex and the admin host to admin.<root domain>. Set them in .env only to
+      # override — e.g. if the marketing site and the tenant zone are different
+      # names. Empty is treated as unset, not as an empty domain.
+      SAFM_ROOT_DOMAIN: ${SAFM_ROOT_DOMAIN:-}
+      SAFM_ADMIN_SERVER_NAME: ${SAFM_ADMIN_SERVER_NAME:-}
       SAFM_UPSTREAM: app:80
       SAFM_AUTH_USER: ${SAFM_AUTH_USER:?set SAFM_AUTH_USER in .env}
       SAFM_AUTH_PASSWORD: ${SAFM_AUTH_PASSWORD:?set SAFM_AUTH_PASSWORD in .env}
-      SAFM_AUTH_REALM: ${SAFM_AUTH_REALM:-SAFM Demo}
+      SAFM_AUTH_REALM: ${SAFM_AUTH_REALM:-SAFM}
+      # OFF for tenant subdomains: a paying customer must not be handed the
+      # shared demo password to reach their own ERP. The apex and admin.<root>
+      # stay gated unconditionally. Set to "true" only on a staging domain where
+      # even the tenant hosts must stay private.
+      SAFM_TENANT_BASIC_AUTH: ${SAFM_TENANT_BASIC_AUTH:-false}
+      # Lets /storage/ through basic auth on the apex only. APP_URL can name
+      # only one host, so Storage::url() points every tenant's uploaded photos
+      # and attachments at https://<apex>/storage/... — behind basic auth those
+      # four call sites render as 401s on the customer's own page.
+      SAFM_PUBLIC_STORAGE: ${SAFM_PUBLIC_STORAGE:-true}
     volumes:
       - certbot_conf:/etc/letsencrypt
       - certbot_www:/var/www/certbot
@@ -52,41 +104,77 @@ services:
       retries: 3
       start_period: 10s
 
-  # The long-running service is RENEWAL only: it wakes twice a day and renews
-  # anything within 30 days of expiry. nginx picks up the new files on its own
-  # reload timer.
+  # Two jobs, one loop (docker/certbot/issue-tenant-cert.sh --watch):
   #
-  # First issuance is a separate, manual, one-shot command — nginx has to be up
-  # already to answer the HTTP-01 challenge, and Let's Encrypt rate-limits hard,
-  # so it must never run automatically on `up`. Note --entrypoint, which is what
-  # stops it from inheriting the renewal loop below:
+  #   1. RENEWAL, exactly as before: every 12 hours, renew anything within 30
+  #      days of expiry.
+  #   2. PER-TENANT ISSUANCE: drain the request queue the app writes into
+  #      /var/www/certbot-requests. TenantProvisioner step 14 drops one file per
+  #      new tenant; each is processed exactly once and then moved to .done or
+  #      .failed. A failed request is never retried automatically — Let's
+  #      Encrypt allows 50 certificates per registered domain per week and every
+  #      tenant subdomain draws from that same bucket, so a retry loop would
+  #      lock issuance out for the entire platform.
+  #
+  # nginx notices the new certificate on its own (it polls /etc/letsencrypt and
+  # re-renders one vhost per issued name), so nothing has to signal it.
+  #
+  # The APEX and ADMIN certificates are still issued by hand, once, because they
+  # are one-off and nginx has to be up to answer the challenge:
   #
   #   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
   #     run --rm --entrypoint certbot certbot certonly \
   #       --webroot -w /var/www/certbot \
-  #       -d facturation.cfpss.ma \
+  #       --cert-name facturation.cfpss.ma -d facturation.cfpss.ma \
   #       --email you@cfpss.ma --agree-tos --no-eff-email
   #
-  # Then: docker compose ... restart nginx
+  #   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  #     run --rm --entrypoint certbot certbot certonly \
+  #       --webroot -w /var/www/certbot \
+  #       --cert-name admin.facturation.cfpss.ma -d admin.facturation.cfpss.ma \
+  #       --email you@cfpss.ma --agree-tos --no-eff-email
+  #
+  #   docker compose ... restart nginx
+  #
+  # To force one tenant's certificate by hand:
+  #   docker compose ... exec certbot sh /opt/safm/issue-tenant-cert.sh acme
   certbot:
     image: certbot/certbot:latest
     restart: unless-stopped
     depends_on:
       - nginx
+    environment:
+      # Used to expand a bare tenant slug into <slug>.<root domain>. The script
+      # falls back to SAFM_SERVER_NAME when the first is empty.
+      SAFM_ROOT_DOMAIN: ${SAFM_ROOT_DOMAIN:-}
+      SAFM_SERVER_NAME: ${SAFM_SERVER_NAME:?set SAFM_SERVER_NAME in .env}
+      # No certificate can be issued without a registration address. Left soft
+      # rather than required so that a stack with TLS not yet configured still
+      # comes up: the script logs and skips (exit 3), which the provisioner
+      # already treats as non-fatal.
+      SAFM_CERT_EMAIL: ${SAFM_CERT_EMAIL:-}
+      SAFM_CERT_REQUEST_DIR: /var/www/certbot-requests
+      SAFM_CERT_WEBROOT: /var/www/certbot
+      # "true" points issuance at the Let's Encrypt staging CA: untrusted certs,
+      # but effectively unlimited. Use it while testing the provisioning flow.
+      SAFM_CERT_STAGING: ${SAFM_CERT_STAGING:-false}
     volumes:
       - certbot_conf:/etc/letsencrypt
       - certbot_www:/var/www/certbot
+      - certbot_requests:/var/www/certbot-requests
+      # Read-only bind of the script directory. A bind mount from a Windows
+      # checkout carries no executable bit, hence the explicit `sh`.
+      - ./docker/certbot:/opt/safm:ro
     entrypoint: /bin/sh
     command:
+      # exec so the script becomes PID 1 and receives SIGTERM itself — it traps
+      # it and exits cleanly out of its sleep instead of being killed after the
+      # 10s grace period.
       - -c
-      - |
-        trap exit TERM
-        while :; do
-          certbot renew --webroot -w /var/www/certbot --quiet
-          sleep 12h & wait $${!}
-        done
+      - exec sh /opt/safm/issue-tenant-cert.sh --watch
 
 volumes:
   certbot_conf:
   certbot_www:
+  certbot_requests:
   nginx_ssl:

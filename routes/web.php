@@ -19,7 +19,6 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TaxController;
-use App\Http\Controllers\TenantController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
@@ -368,7 +367,6 @@ Route::middleware('auth')->group(function () {
     });
     
     // Tenants (SaaS) Module
-    Route::resource('tenants', TenantController::class);
 
     // Stripe Payment Gateway
     Route::get('invoices/{invoice}/pay', [PaymentGatewayController::class, 'invoicePayPage'])->name('invoices.pay');

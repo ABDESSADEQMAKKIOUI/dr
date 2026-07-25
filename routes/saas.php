@@ -1,24 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\TenantController;
-use App\Http\Controllers\SubscriptionController;
-
-// Routes Super Admin (gestion de tous les tenants)
-Route::middleware(['auth:sanctum', 'role:super-admin'])->prefix('saas')->group(function () {
-    // Tenants
-    Route::apiResource('tenants', TenantController::class);
-    Route::post('tenants/{tenant}/suspend', [TenantController::class, 'suspend']);
-    Route::post('tenants/{tenant}/activate', [TenantController::class, 'activate']);
-    Route::get('tenants/stats', [TenantController::class, 'stats']);
-
-    // Subscription Plans
-    Route::get('plans', [SubscriptionController::class, 'plans']);
-});
-
-// Routes Tenant (auto-scoped par middleware)
-Route::middleware(['auth:sanctum', 'tenant.scope'])->prefix('subscription')->group(function () {
-    Route::post('subscribe', [SubscriptionController::class, 'subscribe']);
-    Route::post('{subscription}/cancel', [SubscriptionController::class, 'cancel']);
-    Route::post('{subscription}/upgrade', [SubscriptionController::class, 'upgrade']);
-});
+// Intentionally empty. Tenant and subscription management now lives in the
+// operator console: routes/platform.php + App\Http\Controllers\Platform\*,
+// which run on the `platform` guard and the `platform` database connection.
+//
+// This file used to declare /api/saas/* and /api/subscription/* against
+// App\Http\Controllers\TenantController and SubscriptionController. Both
+// resolved App\Models\Tenant -- a model that never existed -- and the tenant
+// group was guarded by a `tenant.scope` middleware alias that was never
+// registered. Every one of those endpoints was dead on arrival, and row-level
+// tenant_id scoping is precisely the design that database-per-tenant replaced.
+//
+// The file itself must keep existing: routes/api.php requires it
+// unconditionally, so deleting it would fatal the whole API route file.

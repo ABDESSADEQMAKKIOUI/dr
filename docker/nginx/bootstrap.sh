@@ -3,22 +3,34 @@
 # Runs from /docker-entrypoint.d/ before nginx starts.
 #
 #   1. builds the basic-auth file from the environment
-#   2. picks a certificate — the real Let's Encrypt one if it exists, otherwise a
-#      self-signed placeholder so nginx can boot and answer the ACME challenge
-#   3. renders conf.d/default.conf from the template
-#   4. backgrounds a reload loop so renewed certificates get picked up
+#   2. writes the shared proxy snippet included by every vhost
+#   3. picks certificates for the apex and for admin.<root> — the real Let's
+#      Encrypt ones if they exist, otherwise a self-signed placeholder so nginx
+#      can boot and answer the ACME challenge
+#   4. renders conf.d/default.conf from safm.conf.template
+#   5. renders one conf.d/tenant-<host>.conf per issued tenant certificate
+#   6. backgrounds a watcher that re-renders (5) and reloads when
+#      /etc/letsencrypt changes — a newly issued tenant certificate goes live
+#      within SAFM_CERT_WATCH_INTERVAL without anyone touching the container
 
 set -eu
 
 SERVER_NAME="${SAFM_SERVER_NAME:-}"
+ROOT_DOMAIN="${SAFM_ROOT_DOMAIN:-$SERVER_NAME}"
+ADMIN_SERVER_NAME="${SAFM_ADMIN_SERVER_NAME:-admin.${ROOT_DOMAIN}}"
 UPSTREAM="${SAFM_UPSTREAM:-app:80}"
 AUTH_USER="${SAFM_AUTH_USER:-}"
 AUTH_PASSWORD="${SAFM_AUTH_PASSWORD:-}"
 AUTH_REALM="${SAFM_AUTH_REALM:-SAFM Demo}"
+TENANT_BASIC_AUTH="${SAFM_TENANT_BASIC_AUTH:-false}"
+PUBLIC_STORAGE="${SAFM_PUBLIC_STORAGE:-false}"
+WATCH_INTERVAL="${SAFM_CERT_WATCH_INTERVAL:-60}"
 
-LE_DIR="/etc/letsencrypt/live/${SERVER_NAME}"
+LE_ROOT="/etc/letsencrypt/live"
 SELF_DIR="/etc/nginx/ssl"
 HTPASSWD="/etc/nginx/safm.htpasswd"
+PROXY_SNIPPET="/etc/nginx/safm-proxy.conf"
+TENANT_TEMPLATE="/etc/nginx/tenant.conf.template"
 
 log()  { printf '\033[0;36m[nginx]\033[0m %s\n' "$*"; }
 die()  { printf '\033[0;31m[nginx] %s\033[0m\n' "$*" >&2; exit 1; }
@@ -28,6 +40,9 @@ die()  { printf '\033[0;31m[nginx] %s\033[0m\n' "$*" >&2; exit 1; }
 # ── 1. Basic auth ─────────────────────────────────────────────────────────────
 # Deliberately fails rather than falling back to a default: a guessable password
 # on a public demo is worse than a container that refuses to start.
+#
+# The htpasswd file is still built unconditionally even when tenant subdomains
+# are open, because the apex and admin.<root> always use it.
 if [ -z "$AUTH_USER" ] || [ -z "$AUTH_PASSWORD" ]; then
     die "SAFM_AUTH_USER and SAFM_AUTH_PASSWORD must both be set. Put them in .env — see .env.prod.example"
 fi
@@ -43,53 +58,235 @@ chown root:nginx "$HTPASSWD"
 chmod 640 "$HTPASSWD"
 log "basic auth enabled for user '${AUTH_USER}'"
 
-# ── 2. Certificate ────────────────────────────────────────────────────────────
-if [ -s "${LE_DIR}/fullchain.pem" ] && [ -s "${LE_DIR}/privkey.pem" ]; then
-    SSL_CERT="${LE_DIR}/fullchain.pem"
-    SSL_KEY="${LE_DIR}/privkey.pem"
-    log "using the Let's Encrypt certificate for ${SERVER_NAME}"
+# `auth_basic <value>;` — the value carries its own quoting so the same token
+# can render either a realm or the literal `off`.
+AUTH_REALM_DIRECTIVE="\"${AUTH_REALM}\""
+
+if [ "$TENANT_BASIC_AUTH" = "true" ]; then
+    TENANT_AUTH="$AUTH_REALM_DIRECTIVE"
+    log "basic auth is ON for tenant subdomains (SAFM_TENANT_BASIC_AUTH=true)"
 else
-    SSL_CERT="${SELF_DIR}/selfsigned.crt"
-    SSL_KEY="${SELF_DIR}/selfsigned.key"
+    TENANT_AUTH="off"
+    log "basic auth is OFF for tenant subdomains — customers reach their own host directly"
+fi
 
-    if [ ! -s "$SSL_CERT" ]; then
-        log "no certificate yet — generating a self-signed placeholder"
+if [ "$PUBLIC_STORAGE" = "true" ]; then
+    APEX_STORAGE_AUTH="off"
+else
+    APEX_STORAGE_AUTH="$AUTH_REALM_DIRECTIVE"
+fi
+
+# ── 2. Shared proxy snippet ───────────────────────────────────────────────────
+# Included from every `location` that proxies. Written here rather than shipped
+# as a file so that the four vhosts in two templates can never drift apart.
+# proxy_pass itself stays in the templates — it is the only per-block part.
+cat > "$PROXY_SNIPPET" <<'PROXY'
+proxy_http_version 1.1;
+
+# $host, not a literal: this is what carries the tenant subdomain through to
+# Laravel, where ResolveTenant reads it off the request and swaps the database.
+# Hard-coding a Host here would make every tenant resolve to the same schema.
+proxy_set_header Host              $host;
+proxy_set_header X-Real-IP         $remote_addr;
+proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+# The app's Apache vhost turns this into HTTPS=on, which is what makes Laravel
+# generate https:// URLs without any application source change.
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-Host  $host;
+proxy_set_header X-Forwarded-Port  $server_port;
+
+# Reports and CSV exports can be slow on a cold cache.
+proxy_connect_timeout 10s;
+proxy_send_timeout    120s;
+proxy_read_timeout    120s;
+
+proxy_buffering off;
+proxy_redirect off;
+PROXY
+
+# ── 3. Certificates ───────────────────────────────────────────────────────────
+ensure_placeholder() {
+    SELF_CERT="${SELF_DIR}/selfsigned.crt"
+    SELF_KEY="${SELF_DIR}/selfsigned.key"
+
+    if [ ! -s "$SELF_CERT" ] || [ ! -s "$SELF_KEY" ]; then
+        log "generating the self-signed placeholder certificate"
         mkdir -p "$SELF_DIR"
+        # The SAN covers the wildcard as well as the apex, so the fallback vhost
+        # that serves brand-new tenants presents a name-matching (if untrusted)
+        # certificate rather than a second, louder error.
         openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
-            -keyout "$SSL_KEY" -out "$SSL_CERT" \
-            -subj "/CN=${SERVER_NAME}" >/dev/null 2>&1 \
+            -keyout "$SELF_KEY" -out "$SELF_CERT" \
+            -subj "/CN=${ROOT_DOMAIN}" \
+            -addext "subjectAltName=DNS:${ROOT_DOMAIN},DNS:*.${ROOT_DOMAIN}" \
+            >/dev/null 2>&1 \
             || die "openssl failed to generate the placeholder certificate"
-        chmod 600 "$SSL_KEY"
+        chmod 600 "$SELF_KEY"
     fi
+}
 
+ensure_placeholder
+
+# Echoes "<fullchain> <privkey>" for $1, falling back to the placeholder.
+cert_pair_for() {
+    _dir="${LE_ROOT}/$1"
+    if [ -s "${_dir}/fullchain.pem" ] && [ -s "${_dir}/privkey.pem" ]; then
+        printf '%s %s' "${_dir}/fullchain.pem" "${_dir}/privkey.pem"
+    else
+        printf '%s %s' "$SELF_CERT" "$SELF_KEY"
+    fi
+}
+
+# shellcheck disable=SC2046
+set -- $(cert_pair_for "$SERVER_NAME")
+SSL_CERT="$1"; SSL_KEY="$2"
+
+set -- $(cert_pair_for "$ADMIN_SERVER_NAME")
+ADMIN_SSL_CERT="$1"; ADMIN_SSL_KEY="$2"
+
+[ "$SSL_CERT" = "$SELF_CERT" ] \
+    && log "no Let's Encrypt certificate for ${SERVER_NAME} yet — using the placeholder" \
+    || log "using the Let's Encrypt certificate for ${SERVER_NAME}"
+
+[ "$ADMIN_SSL_CERT" = "$SELF_CERT" ] \
+    && log "no Let's Encrypt certificate for ${ADMIN_SERVER_NAME} yet — using the placeholder" \
+    || log "using the Let's Encrypt certificate for ${ADMIN_SERVER_NAME}"
+
+if [ "$SSL_CERT" = "$SELF_CERT" ] || [ "$ADMIN_SSL_CERT" = "$SELF_CERT" ]; then
     log "-------------------------------------------------------------------"
     log "  Serving a SELF-SIGNED certificate - browsers will show a warning."
-    log "  Issue the real one (note --entrypoint), then restart this container:"
+    log "  Issue the real ones (note --entrypoint), then restart this container:"
     log ""
     log "    docker compose -f docker-compose.yml -f docker-compose.prod.yml \\"
     log "      run --rm --entrypoint certbot certbot certonly \\"
-    log "        --webroot -w /var/www/certbot -d ${SERVER_NAME} \\"
+    log "        --webroot -w /var/www/certbot \\"
+    log "        --cert-name ${SERVER_NAME} -d ${SERVER_NAME} \\"
+    log "        --email you@cfpss.ma --agree-tos --no-eff-email"
+    log ""
+    log "    docker compose -f docker-compose.yml -f docker-compose.prod.yml \\"
+    log "      run --rm --entrypoint certbot certbot certonly \\"
+    log "        --webroot -w /var/www/certbot \\"
+    log "        --cert-name ${ADMIN_SERVER_NAME} -d ${ADMIN_SERVER_NAME} \\"
     log "        --email you@cfpss.ma --agree-tos --no-eff-email"
     log ""
     log "    docker compose -f docker-compose.yml -f docker-compose.prod.yml \\"
     log "      restart nginx"
+    log ""
+    log "  Tenant subdomains are issued automatically by the certbot service;"
+    log "  see docker/certbot/issue-tenant-cert.sh."
     log "-------------------------------------------------------------------"
 fi
 
-# ── 3. Render the config ──────────────────────────────────────────────────────
+# ── 4. Render the main config ─────────────────────────────────────────────────
 # sed with __TOKEN__ placeholders rather than envsubst, so nginx's own $variables
 # ($host, $remote_addr, $proxy_add_x_forwarded_for, ...) survive untouched.
 sed \
     -e "s|__SERVER_NAME__|${SERVER_NAME}|g" \
+    -e "s|__ADMIN_SERVER_NAME__|${ADMIN_SERVER_NAME}|g" \
+    -e "s|__ROOT_DOMAIN__|${ROOT_DOMAIN}|g" \
     -e "s|__UPSTREAM__|${UPSTREAM}|g" \
     -e "s|__SSL_CERT__|${SSL_CERT}|g" \
     -e "s|__SSL_KEY__|${SSL_KEY}|g" \
-    -e "s|__AUTH_REALM__|${AUTH_REALM}|g" \
+    -e "s|__ADMIN_SSL_CERT__|${ADMIN_SSL_CERT}|g" \
+    -e "s|__ADMIN_SSL_KEY__|${ADMIN_SSL_KEY}|g" \
+    -e "s|__FALLBACK_SSL_CERT__|${SELF_CERT}|g" \
+    -e "s|__FALLBACK_SSL_KEY__|${SELF_KEY}|g" \
+    -e "s|__AUTH_REALM__|${AUTH_REALM_DIRECTIVE}|g" \
+    -e "s|__TENANT_AUTH__|${TENANT_AUTH}|g" \
+    -e "s|__APEX_STORAGE_AUTH__|${APEX_STORAGE_AUTH}|g" \
     /etc/nginx/safm.conf.template > /etc/nginx/conf.d/default.conf
 
-log "serving ${SERVER_NAME} -> ${UPSTREAM}"
+log "serving ${SERVER_NAME}, ${ADMIN_SERVER_NAME} and *.${ROOT_DOMAIN} -> ${UPSTREAM}"
 
-# ── 4. Pick up renewed certificates ───────────────────────────────────────────
-# certbot renews into /etc/letsencrypt in its own container and cannot signal
-# this one, so reload on a timer. A reload is cheap and drops no connections.
-( while :; do sleep 12h; nginx -s reload 2>/dev/null || true; done ) &
+# ── 5. One vhost per issued tenant certificate ────────────────────────────────
+# ssl_certificate cannot be a variable, so SNI needs a server block per name.
+# The source of truth is the filesystem: whatever certbot has put under
+# /etc/letsencrypt/live/ that looks like <something>.<root_domain> and is neither
+# the apex nor the admin host gets a block. Names outside the root domain and
+# names with no usable key pair are ignored.
+#
+# --cert-name <host> in issue-tenant-cert.sh is what guarantees the directory is
+# named after the host rather than <host>-0001, which is what makes deriving
+# server_name from basename() correct.
+render_tenant_vhosts() {
+    _rendered=0
+
+    rm -f /etc/nginx/conf.d/tenant-*.conf
+
+    [ -d "$LE_ROOT" ] || return 0
+
+    for _dir in "$LE_ROOT"/*/; do
+        [ -d "$_dir" ] || continue
+
+        _host="$(basename "$_dir")"
+
+        [ -s "${_dir}fullchain.pem" ] || continue
+        [ -s "${_dir}privkey.pem" ]   || continue
+
+        case "$_host" in
+            "$SERVER_NAME"|"$ADMIN_SERVER_NAME") continue ;;
+            *".${ROOT_DOMAIN}") ;;
+            *) continue ;;
+        esac
+
+        # Refuse anything that is not a plain hostname before it reaches a
+        # filename or a server_name directive.
+        case "$_host" in
+            *[!a-zA-Z0-9.-]*) continue ;;
+        esac
+
+        sed \
+            -e "s|__TENANT_HOST__|${_host}|g" \
+            -e "s|__TENANT_SSL_CERT__|${_dir}fullchain.pem|g" \
+            -e "s|__TENANT_SSL_KEY__|${_dir}privkey.pem|g" \
+            -e "s|__UPSTREAM__|${UPSTREAM}|g" \
+            -e "s|__TENANT_AUTH__|${TENANT_AUTH}|g" \
+            "$TENANT_TEMPLATE" > "/etc/nginx/conf.d/tenant-${_host}.conf"
+
+        _rendered=$(( _rendered + 1 ))
+    done
+
+    log "rendered ${_rendered} tenant vhost(s) from ${LE_ROOT}"
+    return 0
+}
+
+render_tenant_vhosts
+
+# ── 6. Pick up new and renewed certificates ───────────────────────────────────
+# certbot writes into /etc/letsencrypt from its own container and cannot signal
+# this one. Poll a cheap fingerprint of the live certificates; when it changes,
+# re-render the tenant vhosts and reload. This covers BOTH a freshly issued
+# tenant certificate (new directory) and a renewal (same directory, new bytes).
+#
+# The unconditional 12h reload is kept as a belt-and-braces backstop for the
+# case where a certificate is replaced with an identically-hashed file.
+cert_fingerprint() {
+    find "$LE_ROOT" -maxdepth 2 -name fullchain.pem -exec md5sum {} \; 2>/dev/null | sort
+}
+
+(
+    _seen="$(cert_fingerprint)"
+    _elapsed=0
+
+    while :; do
+        sleep "$WATCH_INTERVAL"
+        _elapsed=$(( _elapsed + WATCH_INTERVAL ))
+
+        _current="$(cert_fingerprint)"
+
+        if [ "$_current" != "$_seen" ]; then
+            _seen="$_current"
+            log "certificate change detected — re-rendering tenant vhosts"
+            render_tenant_vhosts
+            if nginx -t >/dev/null 2>&1; then
+                nginx -s reload 2>/dev/null || true
+            else
+                printf '\033[0;31m[nginx] refusing to reload: the regenerated configuration does not pass nginx -t\033[0m\n' >&2
+                nginx -t || true
+            fi
+        elif [ "$_elapsed" -ge 43200 ]; then
+            _elapsed=0
+            nginx -s reload 2>/dev/null || true
+        fi
+    done
+) &
