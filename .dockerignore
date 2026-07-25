@@ -1,0 +1,58 @@
+# Keep the build context small and keep secrets/junk out of the image.
+
+.git
+.gitattributes
+.gitignore
+.editorconfig
+.htaccess
+
+# Never ship these. run_setup.php is an unauthenticated, publicly reachable
+# diagnostics endpoint that prints storage/logs/laravel.log and shell_exec()s
+# migrations; error_log leaks stack traces and absolute paths from the live host.
+run_setup.php
+public/run_setup.php
+error_log
+public/error_log
+composer.phar
+local-php.ini
+
+# Resolved inside the image.
+vendor
+node_modules
+
+# Runtime state — recreated by the entrypoint.
+.env
+.env.backup
+.env.production
+storage/app/public/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+public/storage
+public/hot
+public/build
+
+# Not needed at runtime.
+tests
+phpunit.xml
+.phpunit.cache
+.phpunit.result.cache
+facturation
+stock_management_structure.txt
+IMPLEMENTATION_PLAN.md
+MISSING_FEATURES.md
+BACKEND_SETUP.md
+CHANGELOG.md
+
+# Editor / OS noise.
+.idea
+.vscode
+.fleet
+.nova
+.zed
+.claude
+.agent
+Thumbs.db
+.DS_Store

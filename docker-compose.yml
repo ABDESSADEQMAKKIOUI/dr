@@ -1,0 +1,82 @@
+# SAFM — demo stack.
+#
+#   docker compose up -d --build
+#   → http://localhost:8088/login   admin@admin.com / password
+#
+# Override the published port with APP_PORT, e.g. `APP_PORT=9000 docker compose up -d`.
+#
+# Two services only. No Redis (the app never needs it, and CacheService's Redis
+# calls are reachable from exactly one admin page), no queue worker and no
+# scheduler (QUEUE_CONNECTION is sync because this repo has no jobs table).
+
+name: safm-demo
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-safm}
+      MYSQL_USER: ${DB_USERNAME:-safm}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      # --silent so a failed ping does not spam the container log.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    image: safm-demo:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8088}:80"
+    environment:
+      APP_NAME: SAFM Demo
+      APP_ENV: production
+      # Left unset on purpose: the entrypoint generates a key on first boot and
+      # persists it on the storage volume, so sessions survive a recreate.
+      # Pin it here (APP_KEY: base64:...) if you want it fixed across volumes.
+      APP_DEBUG: "false"
+      # Must match the origin the demo is actually reached at. config/filesystems
+      # builds the public disk's url as env('APP_URL').'/storage', and the
+      # entrypoint caches config — so Storage::url() bakes this host in. Showing
+      # the demo over a LAN IP or a tunnel? Set APP_URL to that origin:
+      #   APP_URL=http://192.168.1.20:8088 docker compose up -d
+      APP_URL: ${APP_URL:-http://localhost:${APP_PORT:-8088}}
+      APP_TIMEZONE: Africa/Casablanca
+      APP_LOCALE: fr
+      LOG_LEVEL: warning
+
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: ${DB_DATABASE:-safm}
+      DB_USERNAME: ${DB_USERNAME:-safm}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+
+      # Set to "false" to get an empty instance with only roles, permissions,
+      # settings and the admin account.
+      DEMO_SEED: "true"
+    volumes:
+      # storage/ only. The application code is baked into the image on purpose:
+      # bind-mounting the project from a Windows host breaks `artisan
+      # storage:link` and makes storage/ ownership fight with www-data.
+      - app_storage:/var/www/html/storage
+
+volumes:
+  db_data:
+  app_storage:
