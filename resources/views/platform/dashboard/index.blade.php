@@ -5,12 +5,21 @@
     /**
      * Payload from App\Http\Controllers\Platform\DashboardController@index:
      *   $tenantsByStatus, $tenantsTotal, $activeSubscriptions, $mrr,
-     *   $expiringSoon, $recentAudits, $plansCount
+     *   $expiringSoon, $recentAudits, $plansCount, $newLeads, $recentLeads
      */
     $byStatus = $tenantsByStatus ?? [];
     $total    = $tenantsTotal    ?? 0;
     $expiring = $expiringSoon    ?? collect();
     $audits   = $recentAudits    ?? collect();
+    $leads    = $recentLeads     ?? collect();
+
+    $leadBadges = [
+        'new'       => 'badge-primary',
+        'contacted' => 'badge-info',
+        'qualified' => 'badge-warning',
+        'converted' => 'badge-success',
+        'rejected'  => 'badge-danger',
+    ];
 
     $countOf = fn (string $key) => (int) ($byStatus[$key] ?? 0);
 
@@ -39,6 +48,14 @@
 .sb-track{flex:1;height:.5rem;border-radius:999px;background:#f1f5f9;overflow:hidden;display:block}
 .sb-fill{height:100%;border-radius:999px;display:block}
 .sb-val{font-size:.8125rem;font-weight:700;color:#0f172a;width:2.5rem;text-align:right}
+/* Compact inbound-lead list */
+.ld-row{display:flex;align-items:center;gap:.75rem;padding:.5rem 0;border-bottom:1px solid #f1f5f9;text-decoration:none}
+.ld-row:last-child{border-bottom:none}
+.ld-row:hover .ld-name{color:var(--accent)}
+.ld-main{flex:1;min-width:0}
+.ld-name{display:block;font-size:.8125rem;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .15s}
+.ld-sub{display:block;font-size:.75rem;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ld-date{font-size:.75rem;color:#94a3b8;flex-shrink:0}
 </style>
 @endpush
 
@@ -116,8 +133,8 @@
     </div>
 </div>
 
-{{-- ── Row 2 : billing ──────────────────────────────────────────── --}}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+{{-- ── Row 2 : billing + inbound ────────────────────────────────── --}}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
     <div class="kpi">
         <div>
@@ -155,6 +172,19 @@
         <div class="kpi-icon" style="background:#f1f5f9">
             <svg fill="none" stroke="#475569" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="kpi">
+        <div>
+            <p class="kpi-label">{{ __('app.new_leads') }}</p>
+            <p class="kpi-value sm" style="color:#4f46e5">{{ number_format($newLeads ?? 0) }}</p>
+            <p class="pf-meta" style="margin-top:.15rem">{{ __('app.new_leads_hint') }}</p>
+        </div>
+        <div class="kpi-icon" style="background:#e0e7ff">
+            <svg fill="none" stroke="#4f46e5" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
         </div>
     </div>
@@ -282,6 +312,15 @@
                     </a>
                     @endplatformCan
 
+                    @platformCan('leads.view')
+                    <a href="{{ route('platform.leads.index') }}" class="qa-btn">
+                        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        {{ __('app.demo_requests') }}
+                    </a>
+                    @endplatformCan
+
                     @platformCan('audit.view')
                     <a href="{{ route('platform.audit.index') }}" class="qa-btn">
                         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -293,6 +332,45 @@
                 </div>
             </div>
         </div>
+
+        {{-- Latest demo requests --}}
+        @platformCan('leads.view')
+        <div class="mc" style="margin-bottom:0">
+            <div class="mc-head">
+                <div class="mc-icon" style="background:#e0e7ff">
+                    <svg fill="none" stroke="#4f46e5" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="mc-head-title">{{ __('app.latest_demo_requests') }}</p>
+                    <p class="mc-head-sub">{{ __('app.leads_hint') }}</p>
+                </div>
+            </div>
+            <div class="mc-body">
+                @forelse($leads as $lead)
+                <a href="{{ route('platform.leads.show', $lead->id) }}" class="ld-row">
+                    <span class="ld-main">
+                        <span class="ld-name">{{ $lead->company_name ?: $lead->contact_name }}</span>
+                        <span class="ld-sub">{{ $lead->email }}</span>
+                    </span>
+                    <span class="badge {{ $leadBadges[$lead->status] ?? 'badge-secondary' }}">{{ __('app.lead_status_'.$lead->status) }}</span>
+                    <span class="ld-date">{{ $lead->created_at ? \Illuminate\Support\Carbon::parse($lead->created_at)->format('d/m') : '—' }}</span>
+                </a>
+                @empty
+                <div class="empty-state">
+                    <p class="empty-state-title">{{ __('app.no_leads_found') }}</p>
+                    <p class="empty-state-desc">{{ __('app.no_data') }}</p>
+                </div>
+                @endforelse
+            </div>
+            @if($leads->isNotEmpty())
+            <div class="mc-body" style="padding-top:0">
+                <a href="{{ route('platform.leads.index') }}" class="btn btn-ghost btn-sm w-full text-slate-500">{{ __('app.view_all') }}</a>
+            </div>
+            @endif
+        </div>
+        @endplatformCan
 
         {{-- Status breakdown --}}
         <div class="mc" style="margin-bottom:0">

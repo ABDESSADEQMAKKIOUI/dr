@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Platform\AuditLog;
+use App\Models\Platform\Lead;
 use App\Models\Platform\Plan;
 use App\Models\Platform\Subscription;
 use App\Models\Platform\Tenant;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 /**
@@ -79,6 +81,21 @@ class DashboardController extends Controller
 
         $plansCount = Plan::query()->where('is_active', true)->count();
 
+        // Inbound enquiries from the apex landing page. platform_leads arrived
+        // after the first console release, so an installation that has not run
+        // the newer platform migrations must still get its home screen.
+        $newLeads = 0;
+        $recentLeads = collect();
+
+        if (Schema::connection('platform')->hasTable('platform_leads')) {
+            $newLeads = Lead::query()->where('status', Lead::STATUS_NEW)->count();
+
+            $recentLeads = Lead::query()
+                ->orderByDesc('created_at')
+                ->limit(6)
+                ->get(['id', 'company_name', 'contact_name', 'email', 'source', 'status', 'created_at']);
+        }
+
         return view('platform.dashboard.index', [
             'tenantsByStatus' => $tenantsByStatus,
             'tenantsTotal' => $tenantsTotal,
@@ -87,6 +104,8 @@ class DashboardController extends Controller
             'expiringSoon' => $expiringSoon,
             'recentAudits' => $recentAudits,
             'plansCount' => $plansCount,
+            'newLeads' => $newLeads,
+            'recentLeads' => $recentLeads,
         ]);
     }
 }

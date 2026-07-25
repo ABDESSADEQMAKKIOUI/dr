@@ -88,6 +88,20 @@ services:
       # shared demo password to reach their own ERP. The apex and admin.<root>
       # stay gated unconditionally. Set to "true" only on a staging domain where
       # even the tenant hosts must stay private.
+      # All three basic-auth switches must be forwarded explicitly. Compose does
+      # not pass the host environment through, so a switch that is set in .env
+      # but missing here silently does nothing — bootstrap.sh just falls back to
+      # its own default and the operator is left believing the gate is on.
+      #
+      # OFF for the apex: it serves the public landing page and the demo-request
+      # form. A password prompt there hides the page from the people it exists
+      # for. Turn it on for staging, or before the landing page is ready.
+      SAFM_APEX_BASIC_AUTH: ${SAFM_APEX_BASIC_AUTH:-false}
+      # OFF for the console: it has its own guard, per-ability authorisation and
+      # a 5/minute login throttle.
+      SAFM_ADMIN_BASIC_AUTH: ${SAFM_ADMIN_BASIC_AUTH:-false}
+      # OFF for tenants: a paying customer must not be handed a shared password
+      # to reach their own ERP. Staging only.
       SAFM_TENANT_BASIC_AUTH: ${SAFM_TENANT_BASIC_AUTH:-false}
       # Lets /storage/ through basic auth on the apex only. APP_URL can name
       # only one host, so Storage::url() points every tenant's uploaded photos

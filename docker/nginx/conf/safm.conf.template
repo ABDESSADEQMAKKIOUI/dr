@@ -5,7 +5,7 @@
 # FIVE server blocks, in the order nginx resolves them for a given Host:
 #
 #   1. port 80, default_server        every host: ACME challenge, then -> https
-#   2. apex        __SERVER_NAME__    the marketing/root host (basic auth)
+#   2. apex        __SERVER_NAME__    the public landing page (public by default)
 #   3. admin       __ADMIN_SERVER_NAME__  the operator console (public by default)
 #   4. wildcard    *.__ROOT_DOMAIN__  tenants with no certificate yet
 #                                     (self-signed placeholder, NO basic auth)
@@ -37,6 +37,17 @@ server {
 }
 
 # ── Apex — __SERVER_NAME__ ────────────────────────────────────────────────────
+# PUBLIC by default. This host serves routes/site.php: the SAFM landing page,
+# the feature and pricing sections, and the "request a demo" form. A basic-auth
+# prompt in front of a marketing page defeats its entire purpose, so the gate is
+# opt-in. Set SAFM_APEX_BASIC_AUTH=true to close it again — useful on a staging
+# domain, or before the landing page is ready to be seen.
+#
+# The same switch drives the X-Robots-Tag below: a public apex is meant to be
+# found, so it invites crawlers; a gated apex keeps the noindex it has today.
+#
+# (Comments here must not spell the placeholder tokens out — bootstrap.sh runs a
+# plain sed over this whole file and would substitute them inside the prose too.)
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
@@ -54,7 +65,9 @@ server {
 
     client_max_body_size 40m;
 
-    add_header X-Robots-Tag "noindex, nofollow" always;
+    # The ONLY vhost whose robots policy is conditional. admin and the tenant
+    # hosts stay noindex unconditionally — neither is ever meant to be crawled.
+    __APEX_ROBOTS__
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
@@ -74,9 +87,12 @@ server {
     # tenant page rendering an uploaded employee photo or expense attachment
     # (Storage::url(), four call sites) points the browser at
     # https://<apex>/storage/... . With the apex behind basic auth those four
-    # images 401. __APEX_STORAGE_AUTH__ is `off` when SAFM_PUBLIC_STORAGE=true,
-    # which is what the production overlay sets. Uploaded public-disk files are
-    # not credentials; the ERP itself stays gated.
+    # images 401 — which is why this location keeps its OWN toggle instead of
+    # following the one on `location /` below: uploads must keep working even on
+    # a deployment that has re-gated the apex with SAFM_APEX_BASIC_AUTH=true.
+    # The auth_basic here is `off` when SAFM_PUBLIC_STORAGE=true, which is what
+    # the production overlay sets. Uploaded public-disk files are not
+    # credentials; the ERP itself stays gated.
     location ^~ /storage/ {
         auth_basic           __APEX_STORAGE_AUTH__;
         auth_basic_user_file /etc/nginx/safm.htpasswd;
@@ -85,8 +101,10 @@ server {
         include /etc/nginx/safm-proxy.conf;
     }
 
+    # The auth_basic below renders as `off` unless SAFM_APEX_BASIC_AUTH=true.
+    # Off is the default because everything this host serves is public by design.
     location / {
-        auth_basic           __AUTH_REALM__;
+        auth_basic           __APEX_AUTH__;
         auth_basic_user_file /etc/nginx/safm.htpasswd;
 
         proxy_pass http://__UPSTREAM__;

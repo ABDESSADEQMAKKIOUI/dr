@@ -22,6 +22,8 @@ class PlatformAbilities
             'subscriptions.view',
             'subscriptions.update',
             'plans.view',
+            'leads.view',
+            'leads.manage',
             'audit.view',
         ],
         'billing' => [
@@ -31,12 +33,14 @@ class PlatformAbilities
             'plans.view',
             'plans.create',
             'plans.update',
+            'leads.view',
             'audit.view',
         ],
         'support' => [
             'tenants.view',
             'subscriptions.view',
             'plans.view',
+            'leads.view',
         ],
     ];
 

@@ -23,6 +23,7 @@ AUTH_USER="${SAFM_AUTH_USER:-}"
 AUTH_PASSWORD="${SAFM_AUTH_PASSWORD:-}"
 AUTH_REALM="${SAFM_AUTH_REALM:-SAFM Demo}"
 TENANT_BASIC_AUTH="${SAFM_TENANT_BASIC_AUTH:-false}"
+APEX_BASIC_AUTH="${SAFM_APEX_BASIC_AUTH:-false}"
 PUBLIC_STORAGE="${SAFM_PUBLIC_STORAGE:-false}"
 WATCH_INTERVAL="${SAFM_CERT_WATCH_INTERVAL:-60}"
 
@@ -41,8 +42,11 @@ die()  { printf '\033[0;31m[nginx] %s\033[0m\n' "$*" >&2; exit 1; }
 # Deliberately fails rather than falling back to a default: a guessable password
 # on a public demo is worse than a container that refuses to start.
 #
-# The htpasswd file is still built unconditionally even when tenant subdomains
-# are open, because the apex and admin.<root> always use it.
+# The htpasswd file is still built unconditionally even when every vhost is
+# open, because `auth_basic_user_file` is present in each of them regardless and
+# nginx wants the file to exist. It costs nothing and it means flipping any of
+# the SAFM_*_BASIC_AUTH switches to true takes effect on restart with no other
+# change.
 if [ -z "$AUTH_USER" ] || [ -z "$AUTH_PASSWORD" ]; then
     die "SAFM_AUTH_USER and SAFM_AUTH_PASSWORD must both be set. Put them in .env — see .env.prod.example"
 fi
@@ -68,6 +72,28 @@ if [ "$TENANT_BASIC_AUTH" = "true" ]; then
 else
     TENANT_AUTH="off"
     log "basic auth is OFF for tenant subdomains — customers reach their own host directly"
+fi
+
+# The apex. It serves the PUBLIC LANDING PAGE — what SAFM is, the plans, and the
+# "request a demo" form — so a password prompt in front of it would make the page
+# unreachable by exactly the people it is written for. Open by default.
+#
+# The same switch decides whether crawlers are invited: a public apex is meant to
+# be found, a gated one keeps the noindex every other vhost sends. This is the
+# ONLY vhost whose robots policy is conditional — the operator console and the
+# tenant ERPs must never be indexed, so their header stays hard-coded in the
+# template.
+#
+# Set SAFM_APEX_BASIC_AUTH=true to put the gate back: a staging domain, or a
+# production host where the landing page is not ready to be seen yet.
+if [ "$APEX_BASIC_AUTH" = "true" ]; then
+    APEX_AUTH="$AUTH_REALM_DIRECTIVE"
+    APEX_ROBOTS='add_header X-Robots-Tag "noindex, nofollow" always;'
+    log "basic auth is ON for the apex (SAFM_APEX_BASIC_AUTH=true) — landing page gated, noindex"
+else
+    APEX_AUTH="off"
+    APEX_ROBOTS='add_header X-Robots-Tag "index, follow" always;'
+    log "apex is PUBLIC — the landing page is open and indexable"
 fi
 
 if [ "$PUBLIC_STORAGE" = "true" ]; then
@@ -238,10 +264,11 @@ sed \
     -e "s|__ADMIN_SSL_KEY__|${ADMIN_SSL_KEY}|g" \
     -e "s|__FALLBACK_SSL_CERT__|${SELF_CERT}|g" \
     -e "s|__FALLBACK_SSL_KEY__|${SELF_KEY}|g" \
-    -e "s|__AUTH_REALM__|${AUTH_REALM_DIRECTIVE}|g" \
+    -e "s|__APEX_AUTH__|${APEX_AUTH}|g" \
     -e "s|__ADMIN_AUTH__|${ADMIN_AUTH}|g" \
     -e "s|__TENANT_AUTH__|${TENANT_AUTH}|g" \
     -e "s|__APEX_STORAGE_AUTH__|${APEX_STORAGE_AUTH}|g" \
+    -e "s|__APEX_ROBOTS__|${APEX_ROBOTS}|g" \
     -e "s|__APEX_HSTS__|${APEX_HSTS}|g" \
     -e "s|__ADMIN_HSTS__|${ADMIN_HSTS}|g" \
     /etc/nginx/safm.conf.template > /etc/nginx/conf.d/default.conf

@@ -28,6 +28,35 @@
         </a>
         @endplatformCan
 
+        @platformCan('leads.view')
+        @php
+            /**
+             * New-lead badge. rescue() keeps the whole console navigable on an
+             * installation whose platform migrations predate platform_leads.
+             */
+            $platformNewLeads = rescue(
+                fn () => \App\Models\Platform\Lead::query()
+                    ->where('status', \App\Models\Platform\Lead::STATUS_NEW)
+                    ->count(),
+                0,
+                false
+            );
+        @endphp
+        <a href="{{ route('platform.leads.index') }}"
+           class="sidebar-link {{ request()->routeIs('platform.leads.*') ? 'active' : '' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            {{ __('app.demo_requests') }}
+            @if($platformNewLeads > 0)
+            <span class="ml-auto"
+                  style="background:#4f46e5;color:#fff;border-radius:999px;padding:.1rem .45rem;font-size:.6875rem;font-weight:700;line-height:1.25">
+                {{ $platformNewLeads > 99 ? '99+' : $platformNewLeads }}
+            </span>
+            @endif
+        </a>
+        @endplatformCan
+
         <div class="sidebar-section">{{ __('app.billing') }}</div>
 
         @platformCan('plans.view')

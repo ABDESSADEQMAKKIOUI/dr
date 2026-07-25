@@ -7,6 +7,7 @@ use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\SubscriptionController;
 use App\Http\Controllers\Platform\OperatorController;
+use App\Http\Controllers\Platform\LeadController;
 use App\Http\Controllers\Platform\AuditLogController;
 
 Route::middleware('guest:platform')->group(function () {
@@ -49,6 +50,19 @@ Route::middleware('auth:platform')->group(function () {
         });
         Route::middleware('platform.ability:tenants.provision')->group(function () {
             Route::post('{tenant}/reprovision', [TenantController::class, 'reprovision'])->whereNumber('tenant')->name('reprovision');
+        });
+    });
+
+    // Inbound enquiries from the apex landing page. Same shape as the tenant
+    // block: {lead} is ->whereNumber()'d and reading is separated from mutating.
+    Route::prefix('leads')->name('leads.')->group(function () {
+        Route::middleware('platform.ability:leads.view')->group(function () {
+            Route::get('/',      [LeadController::class, 'index'])->name('index');
+            Route::get('{lead}', [LeadController::class, 'show'])->whereNumber('lead')->name('show');
+        });
+        Route::middleware('platform.ability:leads.manage')->group(function () {
+            Route::put('{lead}',    [LeadController::class, 'update'])->whereNumber('lead')->name('update');
+            Route::delete('{lead}', [LeadController::class, 'destroy'])->whereNumber('lead')->name('destroy');
         });
     });
 

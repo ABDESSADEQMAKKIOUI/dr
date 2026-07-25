@@ -3,8 +3,13 @@
 Target: an Ubuntu VPS whose DNS A record for `facturation.cfpss.ma` already
 points at it.
 
-Result: nginx on 80/443 with a Let's Encrypt certificate, HTTP basic auth in
-front of the whole app, and the ERP behind it.
+Result: nginx on 80/443 with a Let's Encrypt certificate, the public SAFM
+landing page on the apex, the operator console on `admin.<root>`, and one ERP
+per tenant on `<slug>.<root>`.
+
+None of those three is behind HTTP basic auth by default. Each has its own
+switch — see [Basic auth at the edge](#basic-auth-at-the-edge) — and the shared
+credentials exist so you can flip one on, not because anything needs them today.
 
 Every command below runs **on the VPS**.
 
@@ -89,6 +94,42 @@ openssl rand -base64 24    # run once per secret
 
 `.env` is gitignored and stays on the server.
 
+### Basic auth at the edge
+
+Three independent switches, all `false` by default — nothing is gated out of the
+box. `SAFM_AUTH_USER` / `SAFM_AUTH_PASSWORD` are still mandatory: nginx refuses
+to start without them, so that turning any switch on is a one-line change that
+takes effect on the next restart.
+
+| Key | Default | Gates | Turn it on when |
+|---|---|---|---|
+| `SAFM_APEX_BASIC_AUTH` | `false` | the apex, `facturation.cfpss.ma` | staging, or production before the landing page is ready to be seen |
+| `SAFM_ADMIN_BASIC_AUTH` | `false` | the operator console, `admin.<root>` | you want a second lock in front of a console that already has its own login, per-ability authorisation and a 5/minute login throttle |
+| `SAFM_TENANT_BASIC_AUTH` | `false` | every tenant, `*.<root>` | staging only — **never** in production. A paying customer must not be handed a shared password to reach their own ERP |
+
+`SAFM_APEX_BASIC_AUTH` matters most, because the apex is the **public landing
+page**: what SAFM is, the plans read from the `plans` table, and the "request a
+demo" form that files a lead straight into the operator console. A password
+prompt in front of it hides the page from exactly the people it was written for.
+
+That switch also drives the apex's `X-Robots-Tag`:
+
+| `SAFM_APEX_BASIC_AUTH` | Apex | `X-Robots-Tag` on the apex |
+|---|---|---|
+| `false` (default) | open to anyone | `index, follow` — search engines welcome |
+| `true` | credential prompt | `noindex, nofollow` |
+
+`admin.<root>` and the tenant subdomains send `noindex, nofollow`
+**unconditionally**, whatever these are set to. Neither is ever meant to be
+crawled, and no switch can change that.
+
+> Turning `SAFM_APEX_BASIC_AUTH` or `SAFM_ADMIN_BASIC_AUTH` **on** also needs the
+> value forwarded to the nginx container. `docker-compose.prod.yml` passes an
+> explicit list of `SAFM_*` variables to that service; add
+> `SAFM_APEX_BASIC_AUTH: ${SAFM_APEX_BASIC_AUTH:-false}` under the nginx
+> service's `environment:` before relying on it. Leaving both at the default
+> needs no change — `bootstrap.sh` already defaults them to `false`.
+
 ---
 
 ## 4. First start
@@ -135,7 +176,15 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml restart nginx
 Verify:
 
 ```bash
-curl -sI https://facturation.cfpss.ma/ | head -1     # expect 401 (auth prompt)
+# 200 — the public landing page. A 401 here means SAFM_APEX_BASIC_AUTH is on.
+curl -sI https://facturation.cfpss.ma/ | head -1
+
+# index, follow — the apex is the one host that invites crawlers.
+curl -sI https://facturation.cfpss.ma/ | grep -i x-robots-tag
+
+# noindex, nofollow — unconditionally, on the console and on every tenant.
+curl -sI https://admin.facturation.cfpss.ma/ | grep -i x-robots-tag
+
 echo | openssl s_client -connect facturation.cfpss.ma:443 -servername facturation.cfpss.ma 2>/dev/null \
   | openssl x509 -noout -issuer -dates
 ```
@@ -151,13 +200,22 @@ service checks twice a day and nginx reloads on its own timer.
 
 ## 6. Log in
 
-https://facturation.cfpss.ma
+https://facturation.cfpss.ma opens the **landing page**. No prompt, no login —
+that is the point. It is what a prospect sees, and the demo form at the bottom
+files a lead into the operator console.
 
-1. Browser asks for the basic-auth credentials from `.env`
-2. Then the ERP login: `admin@admin.com` / `password`
+The things you actually log into:
 
-**Change that admin password immediately** — Settings → My Profile. It is a
-seeded default published in this repository.
+| URL | What it is |
+|---|---|
+| `https://admin.facturation.cfpss.ma/login` | operator console — the account from `PLATFORM_ADMIN_EMAIL`, or the password printed once in the app container log |
+| `https://<slug>.facturation.cfpss.ma` | a provisioned tenant's ERP — `admin@admin.com` / `password` on a demo-seeded tenant |
+
+If the apex prompts for a password instead of showing the landing page, you have
+`SAFM_APEX_BASIC_AUTH=true`.
+
+**Change that seeded tenant password immediately** — Settings → My Profile. It
+is a default published in this repository.
 
 ---
 
@@ -182,16 +240,26 @@ uploads**):
 $C down -v && $C up -d
 ```
 
-Change the basic-auth password: edit `.env`, then `$C up -d --force-recreate nginx`.
+Change the basic-auth password, or flip any of the three
+`SAFM_*_BASIC_AUTH` switches: edit `.env`, then
+`$C up -d --force-recreate nginx`. `bootstrap.sh` re-renders every vhost on boot
+and logs one line per host telling you which way each landed:
+
+```bash
+$C logs nginx | grep -E 'apex|operator console|tenant subdomains'
+```
 
 ---
 
 ## Before you show it to anyone
 
-The app is not production software and the demo is deliberately fenced off.
-Worth doing first:
+The apex is now open to the internet and asks search engines to index it, so
+this list matters more than it used to. Worth doing first:
 
-- [ ] Change the seeded `admin@admin.com` password
+- [ ] Open `https://facturation.cfpss.ma` in a private window and read it as a stranger would — it is the first thing a prospect and a crawler will see
+- [ ] Submit the demo form once and confirm the lead lands in the operator console
+- [ ] If the landing page is not ready to be public yet, set `SAFM_APEX_BASIC_AUTH=true` — that restores both the credential prompt and `noindex`
+- [ ] Change the seeded `admin@admin.com` password on every demo-seeded tenant
 - [ ] Confirm `DB_PASSWORD` and `DB_ROOT_PASSWORD` are not the example defaults
 - [ ] `sudo ufw allow 22,80,443/tcp && sudo ufw enable` — nothing else needs to be open. The app container binds only to `127.0.0.1:8088` and the database is not published at all
 - [ ] Read the "Known broken areas" table in `DOCKER.md` and avoid those screens: everything under `/api/*` returns 500, as do ~26 web routes. Password reset does not work (no `password_reset_tokens` table)

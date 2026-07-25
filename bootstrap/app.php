@@ -19,14 +19,26 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->name('platform.')
                 ->group(base_path('routes/platform.php'));
 
-            // 2. Tenant ERP, web. NO domain constraint and NO {tenant} route
+            // 2. Public marketing site on the APEX. Domain-pinned like the
+            //    console and, like it, registered BEFORE the tenant group --
+            //    routes/web.php has no domain constraint, so if it went first
+            //    it would match GET / on every host and swallow the apex.
+            //
+            //    The 'site' group deliberately excludes ResolveTenant: the apex
+            //    is not a tenant and ResolveTenant 404s that host by design.
+            Route::domain(config('tenancy.root_domain'))
+                ->middleware('site')
+                ->name('site.')
+                ->group(base_path('routes/site.php'));
+
+            // 3. Tenant ERP, web. NO domain constraint and NO {tenant} route
             //    parameter -- a wildcard domain parameter would be injected as
             //    the first argument of all 83 controllers' actions and break
             //    every one of them. ResolveTenant validates the Host header.
             Route::middleware('tenant')
                 ->group(base_path('routes/web.php'));
 
-            // 3. Tenant ERP, api. Exact parity with what withRouting(api:) did:
+            // 4. Tenant ERP, api. Exact parity with what withRouting(api:) did:
             //    prefix 'api', no name prefix.
             Route::middleware('tenant-api')
                 ->prefix('api')
@@ -67,6 +79,24 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\PlatformLocale::class,
+        ]);
+
+        // ── Public site on the apex. Stock 'web' minus everything that assumes
+        //    a resolved tenant:
+        //      ResolveTenant   the apex is not a tenant; it aborts on this host.
+        //      CheckInstalled  reads the tenant database's installation state.
+        //      LocaleMiddleware queries the tenant 'languages' table.
+        //    Sessions ARE present: the demo form needs a CSRF token and the
+        //    thank-you redirect carries a flash message. UsePlatformConnection
+        //    is intentionally absent too -- it would point anonymous visitors'
+        //    session files at the operator console's own session directory.
+        $middleware->group('site', [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
 
         $middleware->alias([
