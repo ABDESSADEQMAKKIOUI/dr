@@ -96,6 +96,15 @@ Route::middleware('auth')->group(function () {
     });
     
     // Users Management
+    // DECLARED BEFORE the resource, deliberately. Route::resource registers
+    // PUT users/{user}, which is also two segments — so if this came after it,
+    // 'profile' would bind as {user}, fail model resolution and 404. Same trap
+    // that already breaks products/export and customers/export.
+    //
+    // It acts on the AUTHENTICATED user rather than a {user} in the URL: a
+    // self-service form must never be able to rewrite somebody else's
+    // credentials.
+    Route::put('users/profile', [UserController::class, 'updateProfile'])->name('users.profile.update');
     Route::resource('users', UserController::class);
     Route::get('users/{user}/profile', [UserController::class, 'profile'])->name('users.profile');
     

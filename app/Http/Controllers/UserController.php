@@ -68,6 +68,54 @@ class UserController extends Controller
         return view('users.profile', compact('user'));
     }
 
+    /**
+     * Self-service profile update: name, email and password.
+     *
+     * resources/views/users/profile.blade.php has always posted to
+     * route('users.profile.update'), but neither the route nor this method
+     * existed — so the page every deployment tells the admin to visit in order
+     * to change the seeded password threw RouteNotFoundException and 500'd.
+     *
+     * The form field is a single `name`, which is NOT a column: the users table
+     * has first_name / last_name. It is split here rather than changing the
+     * view, so the same page keeps working for anyone who has customised it.
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:190|unique:users,email,'.$user->id,
+            // Only enforced when a new password is actually being set.
+            'current_password' => 'nullable|required_with:password|string',
+            'password' => 'nullable|confirmed|min:8',
+        ]);
+
+        // Verify the CURRENT password before allowing a change. Without this,
+        // anyone with a hijacked session could lock the real owner out.
+        if (! empty($validated['password'])) {
+            if (! Hash::check($request->input('current_password'), $user->password)) {
+                return back()
+                    ->withErrors(['current_password' => __('auth.password')])
+                    ->onlyInput('name', 'email');
+            }
+
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $parts = preg_split('/\s+/', trim($validated['name']), 2);
+
+        $user->first_name = $parts[0];
+        $user->last_name = $parts[1] ?? '';
+        $user->email = $validated['email'];
+        $user->save();
+
+        return redirect()
+            ->route('users.profile', $user)
+            ->with('success', __('app.saved_success'));
+    }
+
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([

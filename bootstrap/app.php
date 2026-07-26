@@ -38,10 +38,30 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::middleware('tenant')
                 ->group(base_path('routes/web.php'));
 
-            // 4. Tenant ERP, api. Exact parity with what withRouting(api:) did:
-            //    prefix 'api', no name prefix.
+            // 4. Tenant ERP, api.
+            //
+            //    ->name('api.') IS LOAD-BEARING, and its absence was a real bug.
+            //
+            //    routes/api.php does not define its own routes: it `require`s
+            //    the SAME module route files as routes/web.php (products.php,
+            //    sales.php, ...). Every route name is therefore registered
+            //    twice, and Laravel's UrlGenerator keeps the LAST registration
+            //    for a given name. With no prefix here, this group ran after the
+            //    web group and silently rebound every name to its /api/*
+            //    counterpart — so route('products.index') in the sidebar
+            //    generated /api/products instead of /products.
+            //
+            //    The symptom was that every sidebar link led to an auth:sanctum
+            //    endpoint: a 500 before Sanctum was installed, a redirect back
+            //    to the dashboard afterwards. Typing /products by hand always
+            //    worked, because the web route itself was fine all along.
+            //
+            //    Namespacing the API names keeps route() resolving to the web
+            //    URLs. The API is still reachable at /api/*; its names are now
+            //    api.products.index and so on.
             Route::middleware('tenant-api')
                 ->prefix('api')
+                ->name('api.')
                 ->group(base_path('routes/api.php'));
         },
     )
