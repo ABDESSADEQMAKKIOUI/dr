@@ -49,6 +49,19 @@ return [
             'driver' => 'session',
             'provider' => 'platform_operators',
         ],
+
+        // routes/api.php and fifteen module route files have always declared
+        // auth:sanctum, and AuthService::login/register have always called
+        // $user->createToken(). The guard was simply never defined, so every one
+        // of those endpoints threw "Auth guard [sanctum] is not defined" and
+        // returned 500. It resolves against the same tenant users table as the
+        // web guard, so a token is scoped to whichever tenant schema the request
+        // resolved - the connection swap does the isolation, exactly as it does
+        // for session auth.
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
     ],
 
     /*

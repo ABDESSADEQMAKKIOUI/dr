@@ -62,7 +62,13 @@
 </div>
 @endif
 
-@if($errors->any())
+{{-- isset() is load-bearing. $errors is shared into views by
+     ShareErrorsFromSession, which belongs to the WEB middleware group only.
+     routes/api.php requires the same module route files as the web group, so
+     every /api/* endpoint reaches a controller that `return view(...)` — with no
+     session, and therefore no $errors. Without this guard those endpoints die
+     with "Undefined variable $errors" and return a 500 instead of a page. --}}
+@if(isset($errors) && $errors->any())
 <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r alert-dismissible" role="alert">
     <div class="flex items-start">
         <svg class="w-5 h-5 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
